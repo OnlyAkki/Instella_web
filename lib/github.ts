@@ -32,15 +32,11 @@ interface GitHubContent {
 
 export async function getGitHubReleases(owner: string, repo: string): Promise<GitHubRelease[]> {
   try {
-    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, {
-      headers: {
-        Accept: "application/vnd.github.v3+json",
-      },
-      next: { revalidate: 3600 },
-    })
+    // Call the internal API route
+    const res = await fetch(`/api/github/releases`)
 
     if (!res.ok) {
-      console.error(`Failed to fetch releases from ${owner}/${repo}:`, res.status, res.statusText)
+      console.error(`Failed to fetch releases from internal API:`, res.status, res.statusText)
       return []
     }
     return res.json()
@@ -52,15 +48,11 @@ export async function getGitHubReleases(owner: string, repo: string): Promise<Gi
 
 export async function getGitHubRepoContents(owner: string, repo: string, path = ""): Promise<GitHubContent[]> {
   try {
-    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
-      headers: {
-        Accept: "application/vnd.github.v3+json",
-      },
-      next: { revalidate: 3600 },
-    })
+    // Call the internal API route
+    const res = await fetch(`/api/github/contents/${owner}/${repo}/${path}`)
 
     if (!res.ok) {
-      console.error(`Failed to fetch contents from ${owner}/${repo}/${path}:`, res.status, res.statusText)
+      console.error(`Failed to fetch contents from internal API:`, res.status, res.statusText)
       return []
     }
     return res.json()
@@ -72,15 +64,33 @@ export async function getGitHubRepoContents(owner: string, repo: string, path = 
 
 export async function getGitHubFileContent(url: string): Promise<string | null> {
   try {
-    const res = await fetch(url, {
-      headers: {
-        Accept: "application/vnd.github.v3.raw",
-      },
-      next: { revalidate: 3600 },
-    })
+    // Example raw.githubusercontent.com URL:
+    // https://raw.githubusercontent.com/OnlyAkki/Instella_Backup/main/backup-name/manifest.json
+    const urlObj = new URL(url)
+    if (urlObj.hostname !== "raw.githubusercontent.com") {
+      console.error("URL is not from raw.githubusercontent.com, skipping proxy:", url)
+      // If it's not a raw content URL, we might not need to proxy it through our /api/github/contents
+      // For now, we'll return null, but in a real app, you might fetch it directly if it's a different type of URL.
+      return null
+    }
+
+    const pathSegments = urlObj.pathname.split("/").filter(Boolean) // Remove empty strings from split
+    if (pathSegments.length < 3) {
+      // Expects at least owner, repo, and branch/commit
+      console.error("Invalid raw.githubusercontent.com URL path:", url)
+      return null
+    }
+
+    const owner = pathSegments[0]
+    const repo = pathSegments[1]
+    // The rest of the path, including the branch/commit and the file path within the repo
+    const contentPath = pathSegments.slice(2).join("/")
+
+    // Call the internal API route with the 'raw' query parameter
+    const res = await fetch(`/api/github/contents/${owner}/${repo}/${contentPath}?raw=true`)
 
     if (!res.ok) {
-      console.error(`Failed to fetch file content from ${url}:`, res.status, res.statusText)
+      console.error(`Failed to fetch file content from internal API: ${res.status} ${res.statusText}`)
       return null
     }
     return res.text()
