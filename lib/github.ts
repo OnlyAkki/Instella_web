@@ -30,10 +30,19 @@ interface GitHubContent {
   }
 }
 
+function getSiteOrigin() {
+  // Browser → just use relative paths.
+  if (typeof window !== "undefined") return ""
+  // Vercel sets VERCEL_URL (e.g. my-site.vercel.app)
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  // Fallback for local dev / next dev
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+}
+
 export async function getGitHubReleases(owner: string, repo: string): Promise<GitHubRelease[]> {
   try {
     // Call the internal API route
-    const res = await fetch(`/api/github/releases`)
+    const res = await fetch(`${getSiteOrigin()}/api/github/releases`)
 
     if (!res.ok) {
       console.error(`Failed to fetch releases from internal API:`, res.status, res.statusText)
@@ -49,7 +58,7 @@ export async function getGitHubReleases(owner: string, repo: string): Promise<Gi
 export async function getGitHubRepoContents(owner: string, repo: string, path = ""): Promise<GitHubContent[]> {
   try {
     // Call the internal API route
-    const res = await fetch(`/api/github/contents/${owner}/${repo}/${path}`)
+    const res = await fetch(`${getSiteOrigin()}/api/github/contents/${owner}/${repo}/${path}`)
 
     if (!res.ok) {
       console.error(`Failed to fetch contents from internal API:`, res.status, res.statusText)
@@ -87,7 +96,7 @@ export async function getGitHubFileContent(url: string): Promise<string | null> 
     const contentPath = pathSegments.slice(2).join("/")
 
     // Call the internal API route with the 'raw' query parameter
-    const res = await fetch(`/api/github/contents/${owner}/${repo}/${contentPath}?raw=true`)
+    const res = await fetch(`${getSiteOrigin()}/api/github/contents/${owner}/${repo}/${contentPath}?raw=true`)
 
     if (!res.ok) {
       console.error(`Failed to fetch file content from internal API: ${res.status} ${res.statusText}`)

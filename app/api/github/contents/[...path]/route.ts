@@ -17,7 +17,11 @@ export async function GET(request: Request, { params }: { params: { path: string
   const acceptHeader = isRaw ? "application/vnd.github.v3.raw" : "application/vnd.github.v3+json"
 
   try {
-    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${contentPath}`, {
+    const githubApiUrl = contentPath
+      ? `https://api.github.com/repos/${owner}/${repo}/contents/${contentPath}`
+      : `https://api.github.com/repos/${owner}/${repo}/contents`
+
+    const res = await fetch(githubApiUrl, {
       headers: {
         Accept: acceptHeader,
       },
