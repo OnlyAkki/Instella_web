@@ -1,0 +1,296 @@
+"use client"
+
+import { motion } from "framer-motion"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Download, Triangle, Smartphone, Calendar, Tag, FileText } from "lucide-react"
+import { format } from "date-fns"
+
+interface GitHubReleaseAsset {
+  browser_download_url: string
+  name: string
+  size: number
+  content_type: string
+}
+
+interface GitHubRelease {
+  tag_name: string
+  name: string | null
+  body: string | null
+  assets: GitHubReleaseAsset[]
+  published_at: string
+}
+
+interface DownloadsClientProps {
+  releases: GitHubRelease[]
+  searchParams: {
+    version?: string
+    arch?: string
+  }
+}
+
+export default function DownloadsClient({ releases, searchParams }: DownloadsClientProps) {
+  const latestRelease = releases.length > 0 ? releases[0] : null
+  const selectedArch = searchParams.arch
+
+  // Function to get APKs for specific architecture
+  const getAPKsForArch = (arch: string) => {
+    const allAPKs: { asset: GitHubReleaseAsset; release: GitHubRelease }[] = []
+
+    releases.forEach((release) => {
+      release.assets
+        .filter((asset) => asset.name.endsWith(".apk"))
+        .forEach((asset) => {
+          const assetName = asset.name.toLowerCase()
+          const is32bit = assetName.includes("32") || assetName.includes("x86")
+          const is64bit = !is32bit // If not 32bit, assume 64bit
+
+          if ((arch === "32" && is32bit) || (arch === "64" && is64bit)) {
+            allAPKs.push({ asset, release })
+          }
+        })
+    })
+
+    return allAPKs
+  }
+
+  // Function to get the most relevant release for the architecture
+  const getArchRelease = (arch: string) => {
+    const apks = getAPKsForArch(arch)
+    return apks.length > 0 ? apks[0].release : latestRelease
+  }
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" },
+    },
+  }
+
+  if (!latestRelease) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-24">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+          <h1 className="text-2xl font-bold mb-4">No Releases Found</h1>
+          <p className="text-muted-foreground">Please check back later for updates.</p>
+        </motion.div>
+      </div>
+    )
+  }
+ <div className="text-center mt-8">
+                <Button variant="outline" asChild>
+                  <Link href="/downloads">← Back to Architecture Selection</Link>
+                </Button>
+              </div>
+  return (
+    <div className="flex-1 py-16 md:py-24">
+      <div className="container mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl mb-4">Downloads</h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Choose your preferred architecture and download the latest version of Instella App.
+          </p>
+        </motion.div>
+
+        {!selectedArch ? (
+          // Architecture Selection - No release info here
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto"
+          >
+            <motion.div variants={itemVariants}>
+              <Card className="group relative h-full overflow-hidden border-border/50 bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
+                <CardHeader className="text-center pb-4">
+                  <motion.div
+                    className="mx-auto mb-4 rounded-full bg-primary/10 p-4 text-primary transition-colors group-hover:bg-primary/20"
+                    whileHover={{ scale: 1.05, rotate: 5 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    <Smartphone className="h-8 w-8" />
+                  </motion.div>
+                  <CardTitle className="text-2xl">32-bit Version</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-muted-foreground mb-6">
+                    Compatible with older devices and specific hardware configurations.
+                  </p>
+                  <Button asChild size="lg" className="w-full">
+                    <Link href="/downloads?arch=32">Select 32-bit</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <Card className="group relative h-full overflow-hidden border-border/50 bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
+                <CardHeader className="text-center pb-4">
+                  <motion.div
+                    className="mx-auto mb-4 rounded-full bg-primary/10 p-4 text-primary transition-colors group-hover:bg-primary/20"
+                    whileHover={{ scale: 1.05, rotate: -5 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    <Triangle className="h-8 w-8" />
+                  </motion.div>
+                  <CardTitle className="text-2xl">64-bit Version</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-muted-foreground mb-6">
+                    Recommended for most modern Android devices with better performance.
+                  </p>
+                  <Button asChild size="lg" className="w-full">
+                    <Link href="/downloads?arch=64">Select 64-bit</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div>
+        ) : (
+          // Architecture-specific downloads with release info
+          <div className="max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="mb-16"
+            >
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold mb-2">{selectedArch}-bit Version Selected</h2>
+                <p className="text-muted-foreground">Choose between Clone and Standard versions</p>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                {getAPKsForArch(selectedArch)
+                  .slice(0, 2)
+                  .map(({ asset }, index) => {
+                    const isClone = asset.name.toLowerCase().includes("clone")
+                    const isStandard = !isClone
+
+                    return (
+                      <motion.div
+                        key={asset.name}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                      >
+                        <Card className="group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
+                          <CardContent className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="font-semibold text-lg">
+                                {isClone ? "Clone Version" : "Standard Version"}
+                              </h3>
+                              <span className="text-sm text-muted-foreground">
+                                {(asset.size / 1024 / 1024).toFixed(1)} MB
+                              </span>
+                            </div>
+                            <p className="text-muted-foreground text-sm mb-4">
+                              {isClone
+                                ? "Run multiple Instagram instances on your device"
+                                : "Standard single-instance version"}
+                            </p>
+                            <Button asChild className="w-full">
+                              <Link href={asset.browser_download_url} target="_blank" rel="noopener noreferrer">
+                                <Download className="h-4 w-4 mr-2" />
+                                Download {isClone ? "Clone" : "Standard"}
+                              </Link>
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    )
+                  })}
+              </div>
+
+             
+            </motion.div>
+
+            {/* Release Information for selected architecture */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              {(() => {
+                const archRelease = getArchRelease(selectedArch)
+                // Get total APK count for this specific release
+                const totalAPKsInRelease = archRelease
+                  ? archRelease.assets.filter((asset) => asset.name.endsWith(".apk")).length
+                  : 0
+
+                return (
+                  <Card className="border-border/50 bg-card/50 backdrop-blur">
+                    <CardHeader>
+                      <CardTitle className="text-2xl flex items-center gap-2">
+                        <Tag className="h-5 w-5" />
+                        Instella App {archRelease?.tag_name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          <span>
+                            Released: {archRelease ? format(new Date(archRelease.published_at), "PPP") : "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <FileText className="h-4 w-4" />
+                          <span>{totalAPKsInRelease} files available</span>
+                        </div>
+                      </div>
+
+                      {archRelease?.body && (
+                        <div>
+                          <h3 className="font-semibold mb-2">Release Notes</h3>
+                          <div className="prose prose-sm max-w-none dark:prose-invert">
+                            <pre className="whitespace-pre-wrap text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg">
+                              {archRelease.body}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+
+                      {releases.length > 1 && (
+                        <div>
+                          <h3 className="font-semibold mb-4">Other Versions</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {releases.slice(1, 6).map((release) => (
+                              <Button key={release.tag_name} variant="outline" size="sm" asChild>
+                                <Link href={`/downloads?arch=${selectedArch}&version=${release.tag_name}`}>
+                                  {release.tag_name}
+                                </Link>
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })()}
+            </motion.div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
