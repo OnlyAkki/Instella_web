@@ -234,7 +234,7 @@ export default function BackupViewClient({
                   </Button>
                   {mcOverridesDownloadUrl && (
                     <p className="text-xs text-muted-foreground mt-2">
-                      File: {backupId}_mc_overrides.json
+                      Note: This Backup File is owned by Instella Community! 
                     </p>
                   )}
                 </div>
