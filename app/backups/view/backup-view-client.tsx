@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Calendar, User, Tag, FileText, File } from "lucide-react"
 import { format } from "date-fns"
 import { downloadFile } from "../download-action" // Import the new Server Action
+import { useState } from "react" // Import useState for loading state
 
 interface ManifestData {
   manifest_version?: number
@@ -42,6 +43,7 @@ export default function BackupViewClient({
 }: BackupViewClientProps) {
   const router = useRouter()
   const manifest = manifestData?.manifest
+  const [isDownloading, setIsDownloading] = useState(false) // State for download loading
 
   console.log("BackupViewClient: Rendering with mcOverridesDownloadUrl:", mcOverridesDownloadUrl)
 
@@ -51,23 +53,33 @@ export default function BackupViewClient({
 
   const handleDownloadBackup = async () => {
     if (!mcOverridesDownloadUrl) {
-      console.error("Download URL is missing for mc_overrides.json")
+      console.error("BackupViewClient: Download URL is missing for mc_overrides.json")
       alert("Download file not available.")
       return
     }
 
-    console.log("BackupViewClient: Initiating download via Server Action for:", mcOverridesDownloadUrl)
-    // Call the server action directly
-    const response = await downloadFile(mcOverridesDownloadUrl, `${backupId}_mc_overrides.json`)
+    setIsDownloading(true) // Set downloading state to true
 
-    if (!response.ok) {
-      const errorMessage = await response.text()
-      console.error("BackupViewClient: Download failed:", errorMessage)
-      alert(`Failed to download file: ${errorMessage}`)
-    } else {
-      // The browser will handle the download due to Content-Disposition header
-      // No need to create a Blob or temporary URL on the client side
-      console.log("BackupViewClient: Download initiated successfully by server action.")
+    try {
+      console.log("BackupViewClient: Initiating download via Server Action for:", mcOverridesDownloadUrl)
+      // Call the server action directly
+      const response = await downloadFile(mcOverridesDownloadUrl, `${backupId}_mc_overrides.json`)
+
+      if (!response.ok) {
+        const errorMessage = await response.text()
+        console.error("BackupViewClient: Download failed:", errorMessage)
+        alert(`Failed to download file: ${errorMessage}`)
+      } else {
+        // The browser will handle the download due to Content-Disposition header
+        // No need to create a Blob or temporary URL on the client side
+        console.log("BackupViewClient: Download initiated successfully by server action.")
+        // For successful downloads, the browser handles it. No further client-side action needed here.
+      }
+    } catch (err: any) {
+      console.error("BackupViewClient: Error calling downloadFile Server Action:", err)
+      alert(`An unexpected error occurred: ${err.message || "Please try again."}`)
+    } finally {
+      setIsDownloading(false) // Reset downloading state
     }
   }
 
@@ -151,9 +163,22 @@ export default function BackupViewClient({
 
               {mcOverridesDownloadUrl && (
                 <div className="pt-4 border-t">
-                  <Button size="lg" className="w-full sm:w-auto" onClick={handleDownloadBackup}>
-                    <File className="h-4 w-4 mr-2" />
-                    Download Backup File
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto"
+                    onClick={handleDownloadBackup}
+                    disabled={isDownloading} // Disable button while downloading
+                  >
+                    {isDownloading ? (
+                      <>
+                        <span className="animate-spin mr-2">⚙️</span> Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <File className="h-4 w-4 mr-2" />
+                        Download Backup File
+                      </>
+                    )}
                   </Button>
                 </div>
               )}
