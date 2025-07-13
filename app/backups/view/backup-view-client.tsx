@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Calendar, User, Tag, FileText, File } from "lucide-react"
 import { format } from "date-fns"
-import { downloadFile } from "../download-action" // Import the new Server Action
+import { downloadFile } from "../download-action" // Import the Server Action
 import { useState } from "react" // Import useState for loading state
 
 interface ManifestData {
