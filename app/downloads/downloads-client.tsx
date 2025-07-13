@@ -151,7 +151,7 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
             className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto"
           >
             <motion.div variants={itemVariants}>
-              <Card className="group relative h-full overflow-hidden border-border/50 bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
+              <Card className="group relative h-full overflow-hidden border-2 border-border bg-card backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
                 <CardHeader className="text-center pb-4">
                   <motion.div
                     className="mx-auto mb-4 rounded-full bg-primary/10 p-4 text-primary transition-colors group-hover:bg-primary/20"
@@ -174,7 +174,7 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
             </motion.div>
 
             <motion.div variants={itemVariants}>
-              <Card className="group relative h-full overflow-hidden border-border/50 bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
+              <Card className="group relative h-full overflow-hidden border-2 border-border bg-card backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
                 <CardHeader className="text-center pb-4">
                   <motion.div
                     className="mx-auto mb-4 rounded-full bg-primary/10 p-4 text-primary transition-colors group-hover:bg-primary/20"
@@ -198,6 +198,17 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
           </motion.div>
         ) : (
           <div className="max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              className="mb-8"
+            >
+              <Button variant="outline" onClick={handleBackToSelection} className="bg-transparent">
+                ← Back to Architecture Selection
+              </Button>
+            </motion.div>
+
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -223,7 +234,7 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                       >
-                        <Card className="group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
+                        <Card className="group relative overflow-hidden border-2 border-border bg-card backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
                           <CardContent className="p-6">
                             <div className="flex items-center justify-between mb-4">
                               <h3 className="font-semibold text-lg">
@@ -261,12 +272,6 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
                     )
                   })}
               </div>
-
-              <div className="text-center mt-8">
-                <Button variant="outline" onClick={handleBackToSelection}>
-                  ← Back to Architecture Selection
-                </Button>
-              </div>
             </motion.div>
 
             <motion.div
@@ -281,7 +286,7 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
                   : 0
 
                 return (
-                  <Card className="border-border/50 bg-card/50 backdrop-blur">
+                  <Card className="border-2 border-border bg-card backdrop-blur">
                     <CardHeader>
                       <CardTitle className="text-2xl flex items-center gap-2">
                         <Tag className="h-5 w-5" />
@@ -306,7 +311,7 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
                         <div>
                           <h3 className="font-semibold mb-2">Release Notes</h3>
                           <div className="prose prose-sm max-w-none dark:prose-invert">
-                            <pre className="whitespace-pre-wrap text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg">
+                            <pre className="whitespace-pre-wrap text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg border border-border">
                               {archRelease.body}
                             </pre>
                           </div>
