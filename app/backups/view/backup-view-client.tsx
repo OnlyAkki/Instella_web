@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Calendar, User, Tag, FileText, File } from "lucide-react"
-import { format, parseISO, isValid } from "date-fns"
-import { downloadFile } from "../download-action"
 import { useState } from "react"
 
 interface ManifestData {
@@ -45,17 +43,6 @@ export default function BackupViewClient({
   const manifest = manifestData?.manifest
   const [isDownloading, setIsDownloading] = useState(false)
 
-  // Safely parse the last-updated date
-  const lastUpdatedDate = manifest?.last_updated
-    ? (() => {
-        console.log("Parsing date: Raw string =", manifest.last_updated)
-        const parsed = parseISO(manifest.last_updated)
-        console.log("Parsing date: parseISO result =", parsed)
-        const valid = isValid(parsed)
-        console.log("Parsing date: isValid result =", valid)
-        return valid ? parsed : null
-      })()
-    : null
 
   console.log("BackupViewClient: Rendering with mcOverridesDownloadUrl:", mcOverridesDownloadUrl)
 
@@ -74,19 +61,41 @@ export default function BackupViewClient({
     setIsDownloading(true)
 
     try {
-      console.log("BackupViewClient: Initiating download via Server Action for:", mcOverridesDownloadUrl)
-      const response = await downloadFile(mcOverridesDownloadUrl, `${backupId}_mc_overrides.json`)
+      console.log("BackupViewClient: Fetching file for download:", mcOverridesDownloadUrl)
+      
+      // Fetch the file directly
+      const response = await fetch(mcOverridesDownloadUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      })
 
       if (!response.ok) {
-        const errorMessage = await response.text()
-        console.error("BackupViewClient: Download failed:", errorMessage)
-        alert(`Failed to download file: ${errorMessage}`)
-      } else {
-        console.log("BackupViewClient: Download initiated successfully by server action.")
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
+
+      // Get the file content as blob
+      const blob = await response.blob()
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${backupId}_mc_overrides.json`
+      
+      // Trigger download
+      document.body.appendChild(link)
+      link.click()
+      
+      // Cleanup
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      
+      console.log("BackupViewClient: Download completed successfully")
     } catch (err: any) {
-      console.error("BackupViewClient: Error calling downloadFile Server Action:", err)
-      alert(`An unexpected error occurred: ${err.message || "Please try again."}`)
+      console.error("BackupViewClient: Error downloading file:", err)
+      alert(`Failed to download file: ${err.message || "Please try again."}`)
     } finally {
       setIsDownloading(false)
     }
@@ -145,7 +154,7 @@ export default function BackupViewClient({
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>Updated: {lastUpdatedDate ? format(lastUpdatedDate, "PPP") : "N/A"}</span>
+                  <span>Updated: N/A</span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Tag className="h-4 w-4" />
