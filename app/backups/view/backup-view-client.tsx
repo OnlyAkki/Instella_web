@@ -4,8 +4,9 @@ import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Calendar, User, Tag, FileText, File } from "lucide-react" // Import File icon
+import { ArrowLeft, Calendar, User, Tag, FileText, File } from "lucide-react"
 import { format } from "date-fns"
+import { downloadFile } from "../download-action" // Import the new Server Action
 
 interface ManifestData {
   manifest_version?: number
@@ -46,6 +47,28 @@ export default function BackupViewClient({
 
   const handleBackToBackups = () => {
     router.push("/backups")
+  }
+
+  const handleDownloadBackup = async () => {
+    if (!mcOverridesDownloadUrl) {
+      console.error("Download URL is missing for mc_overrides.json")
+      alert("Download file not available.")
+      return
+    }
+
+    console.log("BackupViewClient: Initiating download via Server Action for:", mcOverridesDownloadUrl)
+    // Call the server action directly
+    const response = await downloadFile(mcOverridesDownloadUrl, `${backupId}_mc_overrides.json`)
+
+    if (!response.ok) {
+      const errorMessage = await response.text()
+      console.error("BackupViewClient: Download failed:", errorMessage)
+      alert(`Failed to download file: ${errorMessage}`)
+    } else {
+      // The browser will handle the download due to Content-Disposition header
+      // No need to create a Blob or temporary URL on the client side
+      console.log("BackupViewClient: Download initiated successfully by server action.")
+    }
   }
 
   if (error || !manifest) {
@@ -128,11 +151,9 @@ export default function BackupViewClient({
 
               {mcOverridesDownloadUrl && (
                 <div className="pt-4 border-t">
-                  <Button asChild size="lg" className="w-full sm:w-auto">
-                    <a href={mcOverridesDownloadUrl} target="_blank" rel="noopener noreferrer">
-                      <File className="h-4 w-4 mr-2" /> {/* Changed icon here */}
-                      Download Backup File
-                    </a>
+                  <Button size="lg" className="w-full sm:w-auto" onClick={handleDownloadBackup}>
+                    <File className="h-4 w-4 mr-2" />
+                    Download Backup File
                   </Button>
                 </div>
               )}

@@ -1,0 +1,54 @@
+"use server"
+
+/**
+ * Server Action to download a file from a given URL.
+ * It fetches the file and returns it with a Content-Disposition header
+ * to force a download in the browser.
+ * @param fileUrl The URL of the file to download.
+ * @param suggestedFileName An optional suggested filename for the download.
+ */
+export async function downloadFile(fileUrl: string, suggestedFileName?: string) {
+  try {
+    console.log(`Server Action: Attempting to download file from: ${fileUrl}`)
+
+    const response = await fetch(fileUrl, {
+      // Ensure revalidation is not too aggressive if the file changes frequently
+      next: { revalidate: 3600 }, // Cache for 1 hour
+    })
+
+    if (!response.ok) {
+      console.error(`Server Action: Failed to fetch file. Status: ${response.status} ${response.statusText}`)
+      return new Response(`Failed to download file: ${response.statusText}`, { status: response.status })
+    }
+
+    // Determine filename
+    let filename = suggestedFileName
+    if (!filename) {
+      // Try to extract filename from URL
+      const urlParts = fileUrl.split("/")
+      filename = urlParts[urlParts.length - 1]
+      // Remove any query parameters from filename
+      if (filename.includes("?")) {
+        filename = filename.split("?")[0]
+      }
+    }
+
+    // Get content type from original response, or default to application/octet-stream
+    const contentType = response.headers.get("Content-Type") || "application/octet-stream"
+
+    console.log(`Server Action: Preparing to send file '${filename}' with Content-Type: ${contentType}`)
+
+    // Create a new Response to send back to the client with download headers
+    return new Response(response.body, {
+      headers: {
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Type": contentType,
+        // Optionally, add other headers like Content-Length if known
+        // "Content-Length": response.headers.get("Content-Length") || undefined,
+      },
+    })
+  } catch (error) {
+    console.error("Server Action: Error during file download:", error)
+    return new Response("Internal Server Error during download", { status: 500 })
+  }
+}
