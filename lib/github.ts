@@ -32,13 +32,11 @@ interface GitHubContent {
 
 export async function getGitHubReleases(owner: string, repo: string): Promise<GitHubRelease[]> {
   try {
-    // REMOVED: await new Promise((resolve) => setTimeout(resolve, 1000)) // This line was removed
-
     const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, {
       headers: {
         Accept: "application/vnd.github.v3+json",
       },
-      next: { revalidate: 3600 },
+      next: { revalidate: 0 }, // Set revalidate to 0 to always fetch fresh data
     })
 
     if (!res.ok) {
@@ -54,13 +52,11 @@ export async function getGitHubReleases(owner: string, repo: string): Promise<Gi
 
 export async function getGitHubRepoContents(owner: string, repo: string, path = ""): Promise<GitHubContent[]> {
   try {
-    // REMOVED: await new Promise((resolve) => setTimeout(resolve, 1000)) // This line was removed
-
     const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
       headers: {
         Accept: "application/vnd.github.v3+json",
       },
-      next: { revalidate: 3600 },
+      next: { revalidate: 0 }, // Set revalidate to 0 to always fetch fresh data
     })
 
     if (!res.ok) {
@@ -80,7 +76,7 @@ export async function getGitHubFileContent(url: string): Promise<string | null> 
       headers: {
         Accept: "application/vnd.github.v3.raw",
       },
-      next: { revalidate: 3600 },
+      next: { revalidate: 0 }, // Set revalidate to 0 to always fetch fresh data
     })
 
     if (!res.ok) {

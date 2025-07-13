@@ -12,7 +12,7 @@ export async function downloadFile(fileUrl: string, suggestedFileName?: string) 
   try {
     const response = await fetch(fileUrl, {
       // Ensure revalidation is not too aggressive if the file changes frequently
-      next: { revalidate: 3600 }, // Cache for 1 hour
+      next: { revalidate: 3600 }, // Cache for 1 hour, can be adjusted
     })
 
     if (!response.ok) {

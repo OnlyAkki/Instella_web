@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Calendar, User, Tag, FileText, File } from "lucide-react"
-import { format } from "date-fns"
+import { format, parseISO, isValid } from "date-fns"
+import { downloadFile } from "../download-action"
 import { useState } from "react"
 
 interface ManifestData {
@@ -44,9 +45,22 @@ export default function BackupViewClient({
   const manifest = manifestData?.manifest
   const [isDownloading, setIsDownloading] = useState(false)
 
+  // Safely parse the last-updated date
+  const lastUpdatedDate = manifest?.last_updated
+    ? (() => {
+        console.log("Parsing date: Raw string =", manifest.last_updated)
+        const parsed = parseISO(manifest.last_updated)
+        console.log("Parsing date: parseISO result =", parsed)
+        const valid = isValid(parsed)
+        console.log("Parsing date: isValid result =", valid)
+        return valid ? parsed : null
+      })()
+    : null
+
   console.log("BackupViewClient: Rendering with mcOverridesDownloadUrl:", mcOverridesDownloadUrl)
 
   const handleBackToBackups = () => {
+    console.log("BackupViewClient: Navigating back to /backups")
     router.push("/backups")
   }
 
@@ -60,78 +74,31 @@ export default function BackupViewClient({
     setIsDownloading(true)
 
     try {
-      console.log("BackupViewClient: Starting download from:", mcOverridesDownloadUrl)
-      
-      // Fetch the file content from GitHub
-      const response = await fetch(mcOverridesDownloadUrl)
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
-      }
+      console.log("BackupViewClient: Initiating download via Server Action for:", mcOverridesDownloadUrl)
+      const response = await downloadFile(mcOverridesDownloadUrl, `${backupId}_mc_overrides.json`)
 
-      // Get the file content as text
-      const fileContent = await response.text()
-      
-      // Validate that we got JSON content
-      try {
-        JSON.parse(fileContent) // This will throw if it's not valid JSON
-      } catch (jsonError) {
-        console.warn("Downloaded content might not be valid JSON:", jsonError)
-        // Continue anyway - user might still want the file
+      if (!response.ok) {
+        const errorMessage = await response.text()
+        console.error("BackupViewClient: Download failed:", errorMessage)
+        alert(`Failed to download file: ${errorMessage}`)
+      } else {
+        console.log("BackupViewClient: Download initiated successfully by server action.")
       }
-      
-      // Create a blob with the JSON content and proper MIME type
-      const blob = new Blob([fileContent], { 
-        type: 'application/json'
-      })
-      
-      // Create download URL
-      const downloadUrl = URL.createObjectURL(blob)
-      
-      // Create temporary anchor element and trigger download
-      const link = document.createElement('a')
-      link.href = downloadUrl
-      link.download = `${backupId}_mc_overrides.json` // Force download with specific filename
-      link.style.display = 'none' // Hide the link
-      
-      // Add to DOM, click, and remove
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      
-      // Cleanup the object URL to free memory
-      URL.revokeObjectURL(downloadUrl)
-      
-      console.log("BackupViewClient: Download completed successfully")
-      
-      // Optional: Show success message
-      // You could replace this with a toast notification if you have one
-      setTimeout(() => {
-        alert("File downloaded successfully!")
-      }, 100)
-      
     } catch (err: any) {
-      console.error("BackupViewClient: Download failed:", err)
-      alert(`Download failed: ${err.message || "Please try again."}`)
+      console.error("BackupViewClient: Error calling downloadFile Server Action:", err)
+      alert(`An unexpected error occurred: ${err.message || "Please try again."}`)
     } finally {
       setIsDownloading(false)
     }
   }
 
   if (error || !manifest) {
+    console.log("BackupViewClient: Displaying error state. Error:", error, "Manifest exists:", !!manifest)
     return (
       <div className="flex-1 flex items-center justify-center py-24">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          className="text-center"
-        >
-          <h1 className="text-2xl font-bold mb-4">
-            {error || `Could not load backup details for "${backupId}"`}
-          </h1>
-          <p className="text-muted-foreground mb-6">
-            The backup might not exist or there was an error loading it.
-          </p>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+          <h1 className="text-2xl font-bold mb-4">{error || `Could not load backup details for "${backupId}"`}</h1>
+          <p className="text-muted-foreground mb-6">The backup might not exist or there was an error loading it.</p>
           <Button onClick={handleBackToBackups}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Backups
@@ -150,18 +117,12 @@ export default function BackupViewClient({
           transition={{ duration: 0.6 }}
           className="mb-8"
         >
-          <Button 
-            variant="outline" 
-            className="mb-6 bg-transparent" 
-            onClick={handleBackToBackups}
-          >
+          <Button variant="outline" className="mb-6 bg-transparent" onClick={handleBackToBackups}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Backups
           </Button>
 
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-4">
-            {manifest.name}
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-4">{manifest.name}</h1>
           <p className="text-lg text-muted-foreground">
             Version {manifest.version_name} • Backup v{manifest.backup_version}
           </p>
@@ -184,7 +145,7 @@ export default function BackupViewClient({
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>Updated: {format(new Date(manifest.last_updated), "PPP")}</span>
+                  <span>Updated: {lastUpdatedDate ? format(lastUpdatedDate, "PPP") : "N/A"}</span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Tag className="h-4 w-4" />
@@ -205,9 +166,7 @@ export default function BackupViewClient({
                 <div>
                   <h3 className="font-semibold mb-2">Changelog</h3>
                   <div className="bg-muted/50 p-4 rounded-lg">
-                    <pre className="whitespace-pre-wrap text-sm text-muted-foreground">
-                      {manifest.changelog}
-                    </pre>
+                    <pre className="whitespace-pre-wrap text-sm text-muted-foreground">{manifest.changelog}</pre>
                   </div>
                 </div>
               )}
@@ -222,8 +181,7 @@ export default function BackupViewClient({
                   >
                     {isDownloading ? (
                       <>
-                        <span className="animate-spin mr-2">⚙️</span> 
-                        Downloading...
+                        <span className="animate-spin mr-2">⚙️</span> Downloading...
                       </>
                     ) : (
                       <>
@@ -232,11 +190,6 @@ export default function BackupViewClient({
                       </>
                     )}
                   </Button>
-                  {mcOverridesDownloadUrl && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      
-                    </p>
-                  )}
                 </div>
               )}
             </CardContent>
