@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Folder, HardDrive, User } from "lucide-react"
@@ -31,11 +31,16 @@ interface BackupsClientProps {
 
 export default function BackupsClient({ backups }: BackupsClientProps) {
   const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 500)
     return () => clearTimeout(timer)
   }, [])
+
+  const handleViewBackup = (backupName: string) => {
+    router.push(`/backups/view?id=${backupName}`)
+  }
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -105,7 +110,7 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
                 }}
                 className="group"
               >
-                <Card className="relative h-full overflow-hidden border-border/50 bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
+                <Card className="relative h-full overflow-hidden border-border/50 bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
                   <CardHeader className="pb-4">
                     <motion.div
                       className="mx-auto mb-4 rounded-full bg-primary/10 p-3 text-primary transition-colors group-hover:bg-primary/20"
@@ -124,11 +129,9 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
                     <p className="text-sm text-muted-foreground">
                       View details and download this backup configuration.
                     </p>
-                    <Button asChild className="w-full">
-                      <Link href={`/backups/view?id=${backup.name}`}>
-                        <HardDrive className="h-4 w-4 mr-2" />
-                        View Backup
-                      </Link>
+                    <Button className="w-full" onClick={() => handleViewBackup(backup.name)}>
+                      <HardDrive className="h-4 w-4 mr-2" />
+                      View Backup
                     </Button>
                   </CardContent>
                 </Card>

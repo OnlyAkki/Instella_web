@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Download, Calendar, User, Tag, FileText } from "lucide-react"
@@ -39,7 +39,12 @@ export default function BackupViewClient({
   mcOverridesDownloadUrl,
   error,
 }: BackupViewClientProps) {
+  const router = useRouter()
   const manifest = manifestData?.manifest
+
+  const handleBackToBackups = () => {
+    router.push("/backups")
+  }
 
   if (error || !manifest) {
     return (
@@ -47,11 +52,9 @@ export default function BackupViewClient({
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
           <h1 className="text-2xl font-bold mb-4">{error || `Could not load backup details for "${backupId}"`}</h1>
           <p className="text-muted-foreground mb-6">The backup might not exist or there was an error loading it.</p>
-          <Button asChild>
-            <Link href="/backups">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Backups
-            </Link>
+          <Button onClick={handleBackToBackups}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Backups
           </Button>
         </motion.div>
       </div>
@@ -67,11 +70,9 @@ export default function BackupViewClient({
           transition={{ duration: 0.6 }}
           className="mb-8"
         >
-          <Button variant="outline" asChild className="mb-6 bg-transparent">
-            <Link href="/backups">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Backups
-            </Link>
+          <Button variant="outline" className="mb-6 bg-transparent" onClick={handleBackToBackups}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Backups
           </Button>
 
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-4">{manifest.name}</h1>
@@ -126,10 +127,10 @@ export default function BackupViewClient({
               {mcOverridesDownloadUrl && (
                 <div className="pt-4 border-t">
                   <Button asChild size="lg" className="w-full sm:w-auto">
-                    <Link href={mcOverridesDownloadUrl} target="_blank" rel="noopener noreferrer">
+                    <a href={mcOverridesDownloadUrl} target="_blank" rel="noopener noreferrer">
                       <Download className="h-4 w-4 mr-2" />
                       Download Backup File
-                    </Link>
+                    </a>
                   </Button>
                 </div>
               )}

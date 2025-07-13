@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Download, Triangle, Smartphone, Calendar, Tag, FileText } from "lucide-react"
@@ -35,15 +36,20 @@ interface DownloadsClientProps {
 export default function DownloadsClient({ releases, searchParams }: DownloadsClientProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [downloadingAsset, setDownloadingAsset] = useState<string | null>(null)
+  const router = useRouter()
 
   const latestRelease = releases.length > 0 ? releases[0] : null
   const selectedArch = searchParams.arch
 
   useEffect(() => {
-    // Simulate loading time for better UX
     const timer = setTimeout(() => setIsLoading(false), 500)
     return () => clearTimeout(timer)
   }, [])
+
+  // Function to handle architecture selection
+  const handleArchSelection = (arch: string) => {
+    router.push(`/downloads?arch=${arch}`)
+  }
 
   // Function to get APKs for specific architecture
   const getAPKsForArch = (arch: string) => {
@@ -75,6 +81,10 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
     setDownloadingAsset(assetName)
     window.open(downloadUrl, "_blank", "noopener,noreferrer")
     setTimeout(() => setDownloadingAsset(null), 2000)
+  }
+
+  const handleBackToSelection = () => {
+    router.push("/downloads")
   }
 
   const containerVariants = {
@@ -141,7 +151,7 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
             className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto"
           >
             <motion.div variants={itemVariants}>
-              <Card className="group relative h-full overflow-hidden border-border/50 bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
+              <Card className="group relative h-full overflow-hidden border-border/50 bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
                 <CardHeader className="text-center pb-4">
                   <motion.div
                     className="mx-auto mb-4 rounded-full bg-primary/10 p-4 text-primary transition-colors group-hover:bg-primary/20"
@@ -156,15 +166,15 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
                   <p className="text-muted-foreground mb-6">
                     Compatible with older devices and specific hardware configurations.
                   </p>
-                  <Button asChild size="lg" className="w-full">
-                    <Link href="/downloads?arch=32">Select 32-bit</Link>
+                  <Button size="lg" className="w-full" onClick={() => handleArchSelection("32")}>
+                    Select 32-bit
                   </Button>
                 </CardContent>
               </Card>
             </motion.div>
 
             <motion.div variants={itemVariants}>
-              <Card className="group relative h-full overflow-hidden border-border/50 bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
+              <Card className="group relative h-full overflow-hidden border-border/50 bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
                 <CardHeader className="text-center pb-4">
                   <motion.div
                     className="mx-auto mb-4 rounded-full bg-primary/10 p-4 text-primary transition-colors group-hover:bg-primary/20"
@@ -179,8 +189,8 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
                   <p className="text-muted-foreground mb-6">
                     Recommended for most modern Android devices with better performance.
                   </p>
-                  <Button asChild size="lg" className="w-full">
-                    <Link href="/downloads?arch=64">Select 64-bit</Link>
+                  <Button size="lg" className="w-full" onClick={() => handleArchSelection("64")}>
+                    Select 64-bit
                   </Button>
                 </CardContent>
               </Card>
@@ -253,8 +263,8 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
               </div>
 
               <div className="text-center mt-8">
-                <Button variant="outline" asChild>
-                  <Link href="/downloads">← Back to Architecture Selection</Link>
+                <Button variant="outline" onClick={handleBackToSelection}>
+                  ← Back to Architecture Selection
                 </Button>
               </div>
             </motion.div>
