@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Folder, HardDrive, User } from "lucide-react"
@@ -31,28 +31,50 @@ interface BackupsClientProps {
 
 export default function BackupsClient({ backups }: BackupsClientProps) {
   const [isNavigating, setIsNavigating] = useState(false)
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false) // New state to track initial data load
   const router = useRouter()
+  const pathname = usePathname()
 
-  // Initial loading state based on whether backups are available
-  const [isLoading, setIsLoading] = useState(backups.length === 0)
+  // Log component render state
+  console.log(
+    "BackupsClient render: initialDataLoaded =",
+    initialDataLoaded,
+    "isNavigating =",
+    isNavigating,
+    "backups.length =",
+    backups.length,
+    "URL:",
+    typeof window !== "undefined" ? window.location.href : "N/A",
+  )
 
+  // Effect to set initialDataLoaded once backups prop is received
   useEffect(() => {
-    // If backups are loaded, set isLoading to false
-    if (backups.length > 0) {
-      setIsLoading(false)
+    if (!initialDataLoaded && backups) {
+      // Check if backups is not null/undefined
+      console.log("BackupsClient: Initial data loaded. Setting initialDataLoaded to true.")
+      setInitialDataLoaded(true)
     }
-  }, [backups])
+  }, [backups, initialDataLoaded])
 
+  // Effect to reset isNavigating when pathname changes (navigation completes)
   useEffect(() => {
-    // Reset navigating state after a short delay to allow page to load
+    console.log("BackupsClient: useEffect for navigation state triggered by pathname change.")
+    console.log("  Current pathname in useEffect:", pathname)
+    console.log("  Current isNavigating in useEffect:", isNavigating)
+
     if (isNavigating) {
-      const timer = setTimeout(() => setIsNavigating(false), 500) // Reduced delay
+      const timer = setTimeout(() => {
+        console.log("BackupsClient: Setting isNavigating to false after pathname update.")
+        setIsNavigating(false)
+      }, 50) // Small delay to ensure router state is fully updated
       return () => clearTimeout(timer)
     }
-  }, [isNavigating])
+  }, [pathname, isNavigating]) // Depend on pathname and isNavigating
 
   const handleViewBackup = (backupName: string) => {
-    console.log(`Attempting to navigate to /backups/view?id=${backupName}`)
+    console.log(
+      `BackupsClient: Attempting to navigate to /backups/view?id=${backupName}. Setting isNavigating to true.`,
+    )
     setIsNavigating(true)
     router.push(`/backups/view?id=${backupName}`)
   }
@@ -76,7 +98,14 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
     },
   }
 
-  if (isLoading || isNavigating) {
+  // Show loading spinner if initial data hasn't loaded OR if a client-side navigation is in progress
+  if (!initialDataLoaded || isNavigating) {
+    console.log(
+      "BackupsClient: Showing loading state. !initialDataLoaded:",
+      !initialDataLoaded,
+      "isNavigating:",
+      isNavigating,
+    )
     return (
       <div className="flex-1 flex items-center justify-center py-24">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
@@ -102,7 +131,8 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
           </p>
         </motion.div>
 
-        {backups.length === 0 ? (
+        {/* Only show "No Backups Found" if initial data has loaded AND there are no backups */}
+        {initialDataLoaded && backups.length === 0 ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16">
             <Folder className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-xl font-semibold mb-2">No Backups Found</h2>

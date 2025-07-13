@@ -40,54 +40,70 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
 
   const [isLoading, setIsLoading] = useState(releases.length === 0)
 
+  // Log component render state
+  console.log(
+    "DownloadsClient render: selectedArch =",
+    selectedArch,
+    "isNavigating =",
+    isNavigating,
+    "URL:",
+    typeof window !== "undefined" ? window.location.href : "N/A",
+  )
+
   useEffect(() => {
     if (releases.length > 0) {
       setIsLoading(false)
     }
   }, [releases])
 
+  // This useEffect will now specifically handle navigation state based on selectedArch
   useEffect(() => {
+    console.log("DownloadsClient: useEffect for navigation state triggered.")
+    console.log("  Current selectedArch in useEffect:", selectedArch)
+    console.log("  Current isNavigating in useEffect:", isNavigating)
+
+    // If selectedArch changes (meaning navigation has completed or page loaded with arch param)
+    // and we were previously navigating, set isNavigating to false.
+    // This covers both selecting an arch and navigating back to the main downloads page.
     if (isNavigating) {
-      const timer = setTimeout(() => setIsNavigating(false), 500)
-      return () => clearTimeout(timer)
+      console.log("DownloadsClient: Navigation completed. Setting isNavigating to false.")
+      setIsNavigating(false)
     }
-  }, [isNavigating])
+  }, [selectedArch]) // Only depend on selectedArch. isNavigating is updated by handleArchSelection.
 
   const handleArchSelection = (arch: string) => {
-    console.log(`Attempting to navigate to /downloads?arch=${arch}`)
+    console.log(`DownloadsClient: Selecting architecture: ${arch}. Setting isNavigating to true.`)
     setIsNavigating(true)
     router.push(`/downloads?arch=${arch}`)
   }
 
   const getAPKsForArch = (arch: string) => {
-    const allAPKs: { asset: GitHubReleaseAsset; release: GitHubRelease }[] = []
+    const relevantAPKs: { asset: GitHubReleaseAsset; release: GitHubRelease }[] = []
 
     releases.forEach((release) => {
-      release.assets
-        .filter((asset) => asset.name.endsWith(".apk"))
-        .forEach((asset) => {
+      release.assets.forEach((asset) => {
+        if (asset.name.endsWith(".apk")) {
           const assetName = asset.name.toLowerCase()
           const is32bit = assetName.includes("32") || assetName.includes("x86")
           const is64bit =
             !is32bit && (assetName.includes("64") || assetName.includes("arm64") || assetName.includes("armv8"))
 
           if ((arch === "32" && is32bit) || (arch === "64" && is64bit)) {
-            allAPKs.push({ asset, release })
+            relevantAPKs.push({ asset, release })
           }
-        })
+        }
+      })
     })
 
-    return allAPKs.sort((a, b) => {
-      const aIsClone = a.asset.name.toLowerCase().includes("clone")
-      const bIsClone = b.asset.name.toLowerCase().includes("clone")
-      if (aIsClone && !bIsClone) return 1
-      if (!aIsClone && bIsClone) return -1
-      return 0
-    })
+    // Sort by release date (latest first)
+    relevantAPKs.sort((a, b) => new Date(b.release.published_at).getTime() - new Date(a.release.published_at).getTime())
+
+    return relevantAPKs
   }
 
   const getArchRelease = (arch: string) => {
     const apks = getAPKsForArch(arch)
+    // Find the latest release that contains any APK for the selected architecture
     return apks.length > 0 ? apks[0].release : latestRelease
   }
 
@@ -95,11 +111,6 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
     setDownloadingAsset(assetName)
     window.open(downloadUrl, "_blank", "noopener,noreferrer")
     setTimeout(() => setDownloadingAsset(null), 2000)
-  }
-
-  const handleBackToSelection = () => {
-    setIsNavigating(true)
-    router.push("/downloads")
   }
 
   const containerVariants = {
@@ -121,7 +132,11 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
     },
   }
 
+  // This condition is crucial. If selectedArch is null, it should show the selection.
+  // If isNavigating is true, it should show the loading spinner.
+  // The order matters: if isNavigating is true, we show loading regardless of selectedArch.
   if (isLoading || isNavigating) {
+    console.log("DownloadsClient: Showing loading state. isLoading:", isLoading, "isNavigating:", isNavigating)
     return (
       <div className="flex-1 flex items-center justify-center py-24">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
@@ -133,6 +148,7 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
   }
 
   if (!latestRelease) {
+    console.log("DownloadsClient: No latest release found.")
     return (
       <div className="flex-1 flex items-center justify-center py-24">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
@@ -143,21 +159,28 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
     )
   }
 
+  const allArchApks = getAPKsForArch(selectedArch || "")
+  const latestStandardApk = allArchApks.find((item) => !item.asset.name.toLowerCase().includes("clone"))
+  const latestCloneApk = allArchApks.find((item) => item.asset.name.toLowerCase().includes("clone"))
+
+  const apksToDisplay = []
+  if (latestStandardApk) apksToDisplay.push(latestStandardApk)
+  if (latestCloneApk) apksToDisplay.push(latestCloneApk)
+
+  apksToDisplay.sort((a, b) => {
+    const aIsClone = a.asset.name.toLowerCase().includes("clone")
+    const bIsClone = b.asset.name.toLowerCase().includes("clone")
+    if (aIsClone && !bIsClone) return 1
+    if (!aIsClone && bIsClone) return -1
+    return 0
+  })
+
+  console.log("DownloadsClient: Rendering main content. selectedArch:", selectedArch)
+
   return (
     <div className="flex-1 py-16 md:py-24">
       <div className="container mx-auto px-4">
-        {selectedArch && ( // Only show back button if an architecture is selected
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            className="mb-8 text-left" // Align to left
-          >
-            <Button variant="outline" onClick={handleBackToSelection} className="bg-transparent">
-              ← Back to Architecture Selection
-            </Button>
-          </motion.div>
-        )}
+        {/* The "Back to Architecture Selection" button has been removed from here */}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -236,18 +259,6 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
           </motion.div>
         ) : (
           <div className="max-w-4xl mx-auto">
-            {/* The back button is now moved to the top, so this div is no longer needed here */}
-            {/* <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-              className="mb-8"
-            >
-              <Button variant="outline" onClick={handleBackToSelection} className="bg-transparent">
-                ← Back to Architecture Selection
-              </Button>
-            </motion.div> */}
-
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -260,56 +271,52 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
-                {getAPKsForArch(selectedArch)
-                  .slice(0, 2)
-                  .map(({ asset }, index) => {
-                    const isClone = asset.name.toLowerCase().includes("clone")
-                    const isDownloading = downloadingAsset === asset.name
+                {apksToDisplay.map(({ asset }, index) => {
+                  const isClone = asset.name.toLowerCase().includes("clone")
+                  const isDownloading = downloadingAsset === asset.name
 
-                    return (
-                      <motion.div
-                        key={asset.name}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                      >
-                        <Card className="group relative overflow-hidden border-2 border-border bg-card backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
-                          <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                              <h3 className="font-semibold text-lg">
-                                {isClone ? "Clone Version" : "Standard Version"}
-                              </h3>
-                              <span className="text-sm text-muted-foreground">
-                                {(asset.size / 1024 / 1024).toFixed(1)} MB
-                              </span>
-                            </div>
-                            <p className="text-muted-foreground text-sm mb-4">
-                              {isClone
-                                ? "Run multiple Instagram instances on your device"
-                                : "Standard single-instance version"}
-                            </p>
-                            <Button
-                              className="w-full"
-                              onClick={() => handleDownload(asset.name, asset.browser_download_url)}
-                              disabled={isDownloading}
-                            >
-                              {isDownloading ? (
-                                <>
-                                  <LoadingSpinner size="sm" className="mr-2" />
-                                  Downloading...
-                                </>
-                              ) : (
-                                <>
-                                  <Download className="h-4 w-4 mr-2" />
-                                  Download {isClone ? "Clone" : "Standard"}
-                                </>
-                              )}
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    )
-                  })}
+                  return (
+                    <motion.div
+                      key={asset.name}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      <Card className="group relative overflow-hidden border-2 border-border bg-card backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
+                        <CardContent className="p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold text-lg">{isClone ? "Clone Version" : "Standard Version"}</h3>
+                            <span className="text-sm text-muted-foreground">
+                              {(asset.size / 1024 / 1024).toFixed(1)} MB
+                            </span>
+                          </div>
+                          <p className="text-muted-foreground text-sm mb-4">
+                            {isClone
+                              ? "Run multiple Instagram instances on your device"
+                              : "Standard single-instance version"}
+                          </p>
+                          <Button
+                            className="w-full"
+                            onClick={() => handleDownload(asset.name, asset.browser_download_url)}
+                            disabled={isDownloading}
+                          >
+                            {isDownloading ? (
+                              <>
+                                <LoadingSpinner size="sm" className="mr-2" />
+                                Downloading...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="h-4 w-4 mr-2" />
+                                Download {isClone ? "Clone" : "Standard"}
+                              </>
+                            )}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  )
+                })}
               </div>
             </motion.div>
 
@@ -319,7 +326,7 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
               transition={{ duration: 0.6, delay: 0.3 }}
             >
               {(() => {
-                const archRelease = getArchRelease(selectedArch)
+                const archRelease = getArchRelease(selectedArch || "")
                 const totalAPKsInRelease = archRelease
                   ? archRelease.assets.filter((asset) => asset.name.endsWith(".apk")).length
                   : 0
