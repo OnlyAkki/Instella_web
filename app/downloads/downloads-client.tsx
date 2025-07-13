@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Download, Triangle, Smartphone, Calendar, Tag, FileText } from "lucide-react"
@@ -27,46 +27,38 @@ interface GitHubRelease {
 
 interface DownloadsClientProps {
   releases: GitHubRelease[]
-  searchParams: {
-    version?: string
-    arch?: string
-  }
 }
 
-export default function DownloadsClient({ releases, searchParams }: DownloadsClientProps) {
-  const [isLoading, setIsLoading] = useState(true)
-  const [downloadingAsset, setDownloadingAsset] = useState<string | null>(null)
+export default function DownloadsClient({ releases }: DownloadsClientProps) {
   const [isNavigating, setIsNavigating] = useState(false)
+  const [downloadingAsset, setDownloadingAsset] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const selectedArch = searchParams.get("arch")
 
   const latestRelease = releases.length > 0 ? releases[0] : null
-  const selectedArch = searchParams.arch
+
+  const [isLoading, setIsLoading] = useState(releases.length === 0)
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 500)
-    return () => clearTimeout(timer)
-  }, [])
+    if (releases.length > 0) {
+      setIsLoading(false)
+    }
+  }, [releases])
 
   useEffect(() => {
     if (isNavigating) {
-      const timer = setTimeout(() => setIsNavigating(false), 1000)
+      const timer = setTimeout(() => setIsNavigating(false), 500)
       return () => clearTimeout(timer)
     }
   }, [isNavigating])
 
-  // Function to handle architecture selection
   const handleArchSelection = (arch: string) => {
-    console.log(`Selecting architecture: ${arch}`)
+    console.log(`Attempting to navigate to /downloads?arch=${arch}`)
     setIsNavigating(true)
-    try {
-      router.push(`/downloads?arch=${arch}`)
-    } catch (error) {
-      console.error("Navigation error:", error)
-      setIsNavigating(false)
-    }
+    router.push(`/downloads?arch=${arch}`)
   }
 
-  // Function to get APKs for specific architecture
   const getAPKsForArch = (arch: string) => {
     const allAPKs: { asset: GitHubReleaseAsset; release: GitHubRelease }[] = []
 
@@ -76,7 +68,8 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
         .forEach((asset) => {
           const assetName = asset.name.toLowerCase()
           const is32bit = assetName.includes("32") || assetName.includes("x86")
-          const is64bit = !is32bit
+          const is64bit =
+            !is32bit && (assetName.includes("64") || assetName.includes("arm64") || assetName.includes("armv8"))
 
           if ((arch === "32" && is32bit) || (arch === "64" && is64bit)) {
             allAPKs.push({ asset, release })
@@ -84,7 +77,13 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
         })
     })
 
-    return allAPKs
+    return allAPKs.sort((a, b) => {
+      const aIsClone = a.asset.name.toLowerCase().includes("clone")
+      const bIsClone = b.asset.name.toLowerCase().includes("clone")
+      if (aIsClone && !bIsClone) return 1
+      if (!aIsClone && bIsClone) return -1
+      return 0
+    })
   }
 
   const getArchRelease = (arch: string) => {
@@ -147,6 +146,19 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
   return (
     <div className="flex-1 py-16 md:py-24">
       <div className="container mx-auto px-4">
+        {selectedArch && ( // Only show back button if an architecture is selected
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-8 text-left" // Align to left
+          >
+            <Button variant="outline" onClick={handleBackToSelection} className="bg-transparent">
+              ← Back to Architecture Selection
+            </Button>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -224,7 +236,8 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
           </motion.div>
         ) : (
           <div className="max-w-4xl mx-auto">
-            <motion.div
+            {/* The back button is now moved to the top, so this div is no longer needed here */}
+            {/* <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
@@ -233,7 +246,7 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
               <Button variant="outline" onClick={handleBackToSelection} className="bg-transparent">
                 ← Back to Architecture Selection
               </Button>
-            </motion.div>
+            </motion.div> */}
 
             <motion.div
               initial={{ opacity: 0, y: 30 }}

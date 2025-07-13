@@ -30,31 +30,31 @@ interface BackupsClientProps {
 }
 
 export default function BackupsClient({ backups }: BackupsClientProps) {
-  const [isLoading, setIsLoading] = useState(true)
   const [isNavigating, setIsNavigating] = useState(false)
   const router = useRouter()
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 500)
-    return () => clearTimeout(timer)
-  }, [])
+  // Initial loading state based on whether backups are available
+  const [isLoading, setIsLoading] = useState(backups.length === 0)
 
   useEffect(() => {
+    // If backups are loaded, set isLoading to false
+    if (backups.length > 0) {
+      setIsLoading(false)
+    }
+  }, [backups])
+
+  useEffect(() => {
+    // Reset navigating state after a short delay to allow page to load
     if (isNavigating) {
-      const timer = setTimeout(() => setIsNavigating(false), 1000)
+      const timer = setTimeout(() => setIsNavigating(false), 500) // Reduced delay
       return () => clearTimeout(timer)
     }
   }, [isNavigating])
 
   const handleViewBackup = (backupName: string) => {
-    console.log(`Viewing backup: ${backupName}`)
+    console.log(`Attempting to navigate to /backups/view?id=${backupName}`)
     setIsNavigating(true)
-    try {
-      router.push(`/backups/view?id=${backupName}`)
-    } catch (error) {
-      console.error("Navigation error:", error)
-      setIsNavigating(false)
-    }
+    router.push(`/backups/view?id=${backupName}`)
   }
 
   const containerVariants = {
