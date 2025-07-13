@@ -23,6 +23,12 @@ export async function downloadFile(fileUrl: string, suggestedFileName?: string) 
       return new Response(`Failed to download file: ${response.statusText}`, { status: response.status })
     }
 
+    // Defensive check: Ensure response.body is not null
+    if (!response.body) {
+      console.error(`[Server Action] downloadFile: Response body is null for URL: ${fileUrl}`)
+      return new Response("File content not available.", { status: 500 })
+    }
+
     // Determine filename
     let filename = suggestedFileName
     if (!filename) {
@@ -53,7 +59,7 @@ export async function downloadFile(fileUrl: string, suggestedFileName?: string) 
       },
     })
   } catch (error: any) {
-    console.error(`[Server Action] downloadFile: Error during file download for ${fileUrl}:`, error)
+    console.error(`[Server Action] downloadFile: Caught unexpected error during file download for ${fileUrl}:`, error)
     return new Response(`Internal Server Error: ${error.message || "Unknown error"}`, { status: 500 })
   }
 }
