@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Download, Calendar, User, Tag, FileText } from "lucide-react"
+import { ArrowLeft, Calendar, User, Tag, FileText, File } from "lucide-react" // Import File icon
 import { format } from "date-fns"
 
 interface ManifestData {
@@ -41,6 +41,8 @@ export default function BackupViewClient({
 }: BackupViewClientProps) {
   const router = useRouter()
   const manifest = manifestData?.manifest
+
+  console.log("BackupViewClient: Rendering with mcOverridesDownloadUrl:", mcOverridesDownloadUrl)
 
   const handleBackToBackups = () => {
     router.push("/backups")
@@ -128,7 +130,7 @@ export default function BackupViewClient({
                 <div className="pt-4 border-t">
                   <Button asChild size="lg" className="w-full sm:w-auto">
                     <a href={mcOverridesDownloadUrl} target="_blank" rel="noopener noreferrer">
-                      <Download className="h-4 w-4 mr-2" />
+                      <File className="h-4 w-4 mr-2" /> {/* Changed icon here */}
                       Download Backup File
                     </a>
                   </Button>

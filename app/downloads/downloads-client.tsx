@@ -182,17 +182,7 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
       <div className="container mx-auto px-4">
         {/* The "Back to Architecture Selection" button has been removed from here */}
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl mb-4">Downloads</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Choose your preferred architecture and download the latest version of Instella App.
-          </p>
-        </motion.div>
+       
 
         {!selectedArch ? (
           <motion.div

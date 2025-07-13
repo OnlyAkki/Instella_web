@@ -32,9 +32,7 @@ interface GitHubContent {
 
 export async function getGitHubReleases(owner: string, repo: string): Promise<GitHubRelease[]> {
   try {
-    // --- START: Added for testing loading animation ---
-    await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate 1-second network delay
-    // --- END: Added for testing loading animation ---
+    // REMOVED: await new Promise((resolve) => setTimeout(resolve, 1000)) // This line was removed
 
     const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, {
       headers: {
@@ -56,9 +54,7 @@ export async function getGitHubReleases(owner: string, repo: string): Promise<Gi
 
 export async function getGitHubRepoContents(owner: string, repo: string, path = ""): Promise<GitHubContent[]> {
   try {
-    // --- START: Added for testing loading animation ---
-    await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate 1-second network delay
-    // --- END: Added for testing loading animation ---
+    // REMOVED: await new Promise((resolve) => setTimeout(resolve, 1000)) // This line was removed
 
     const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
       headers: {

@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import { useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Folder, HardDrive, User } from "lucide-react"
+import { Folder, User, File } from "lucide-react" // Import File icon
 import { useState, useEffect } from "react"
 import LoadingSpinner from "@/components/loading-spinner"
 
@@ -31,11 +31,10 @@ interface BackupsClientProps {
 
 export default function BackupsClient({ backups }: BackupsClientProps) {
   const [isNavigating, setIsNavigating] = useState(false)
-  const [initialDataLoaded, setInitialDataLoaded] = useState(false) // New state to track initial data load
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
 
-  // Log component render state
   console.log(
     "BackupsClient render: initialDataLoaded =",
     initialDataLoaded,
@@ -46,17 +45,15 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
     "URL:",
     typeof window !== "undefined" ? window.location.href : "N/A",
   )
+  console.log("BackupsClient render: Received backups prop:", backups)
 
-  // Effect to set initialDataLoaded once backups prop is received
   useEffect(() => {
     if (!initialDataLoaded && backups) {
-      // Check if backups is not null/undefined
       console.log("BackupsClient: Initial data loaded. Setting initialDataLoaded to true.")
       setInitialDataLoaded(true)
     }
   }, [backups, initialDataLoaded])
 
-  // Effect to reset isNavigating when pathname changes (navigation completes)
   useEffect(() => {
     console.log("BackupsClient: useEffect for navigation state triggered by pathname change.")
     console.log("  Current pathname in useEffect:", pathname)
@@ -66,10 +63,10 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
       const timer = setTimeout(() => {
         console.log("BackupsClient: Setting isNavigating to false after pathname update.")
         setIsNavigating(false)
-      }, 50) // Small delay to ensure router state is fully updated
+      }, 50)
       return () => clearTimeout(timer)
     }
-  }, [pathname, isNavigating]) // Depend on pathname and isNavigating
+  }, [pathname, isNavigating])
 
   const handleViewBackup = (backupName: string) => {
     console.log(
@@ -98,7 +95,6 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
     },
   }
 
-  // Show loading spinner if initial data hasn't loaded OR if a client-side navigation is in progress
   if (!initialDataLoaded || isNavigating) {
     console.log(
       "BackupsClient: Showing loading state. !initialDataLoaded:",
@@ -131,7 +127,6 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
           </p>
         </motion.div>
 
-        {/* Only show "No Backups Found" if initial data has loaded AND there are no backups */}
         {initialDataLoaded && backups.length === 0 ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16">
             <Folder className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
@@ -162,7 +157,7 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
                       whileHover={{ scale: 1.1, rotate: 5 }}
                       transition={{ type: "spring", stiffness: 400, damping: 10 }}
                     >
-                      <HardDrive className="h-6 w-6" />
+                      <File className="h-6 w-6" /> {/* Changed icon here */}
                     </motion.div>
                     <CardTitle className="text-lg text-center">{backup.name}</CardTitle>
                   </CardHeader>
@@ -175,7 +170,7 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
                       View details and download this backup configuration.
                     </p>
                     <Button className="w-full" onClick={() => handleViewBackup(backup.name)} disabled={isNavigating}>
-                      <HardDrive className="h-4 w-4 mr-2" />
+                      <File className="h-4 w-4 mr-2" /> {/* Changed icon here */}
                       {isNavigating ? "Loading..." : "View Backup"}
                     </Button>
                   </CardContent>
