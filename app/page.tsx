@@ -60,7 +60,7 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
             >
-              Best iOS-style Instagram for Android!
+              The Best iOS-style Instagram for Android!
             </motion.p>
 
             <motion.div
