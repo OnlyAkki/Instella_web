@@ -36,6 +36,7 @@ interface DownloadsClientProps {
 export default function DownloadsClient({ releases, searchParams }: DownloadsClientProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [downloadingAsset, setDownloadingAsset] = useState<string | null>(null)
+  const [isNavigating, setIsNavigating] = useState(false)
   const router = useRouter()
 
   const latestRelease = releases.length > 0 ? releases[0] : null
@@ -46,9 +47,23 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
     return () => clearTimeout(timer)
   }, [])
 
+  useEffect(() => {
+    if (isNavigating) {
+      const timer = setTimeout(() => setIsNavigating(false), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [isNavigating])
+
   // Function to handle architecture selection
   const handleArchSelection = (arch: string) => {
-    router.push(`/downloads?arch=${arch}`)
+    console.log(`Selecting architecture: ${arch}`)
+    setIsNavigating(true)
+    try {
+      router.push(`/downloads?arch=${arch}`)
+    } catch (error) {
+      console.error("Navigation error:", error)
+      setIsNavigating(false)
+    }
   }
 
   // Function to get APKs for specific architecture
@@ -84,6 +99,7 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
   }
 
   const handleBackToSelection = () => {
+    setIsNavigating(true)
     router.push("/downloads")
   }
 
@@ -106,12 +122,12 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
     },
   }
 
-  if (isLoading) {
+  if (isLoading || isNavigating) {
     return (
       <div className="flex-1 flex items-center justify-center py-24">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
           <LoadingSpinner size="lg" />
-          <p className="text-lg text-muted-foreground">Loading releases...</p>
+          <p className="text-lg text-muted-foreground">{isNavigating ? "Loading..." : "Loading releases..."}</p>
         </motion.div>
       </div>
     )
@@ -151,7 +167,7 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
             className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto"
           >
             <motion.div variants={itemVariants}>
-              <Card className="group relative h-full overflow-hidden border-2 border-border bg-card backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
+              <Card className="group relative h-full overflow-hidden border-2 border-border bg-card backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
                 <CardHeader className="text-center pb-4">
                   <motion.div
                     className="mx-auto mb-4 rounded-full bg-primary/10 p-4 text-primary transition-colors group-hover:bg-primary/20"
@@ -166,15 +182,20 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
                   <p className="text-muted-foreground mb-6">
                     Compatible with older devices and specific hardware configurations.
                   </p>
-                  <Button size="lg" className="w-full" onClick={() => handleArchSelection("32")}>
-                    Select 32-bit
+                  <Button
+                    size="lg"
+                    className="w-full"
+                    onClick={() => handleArchSelection("32")}
+                    disabled={isNavigating}
+                  >
+                    {isNavigating ? "Loading..." : "Select 32-bit"}
                   </Button>
                 </CardContent>
               </Card>
             </motion.div>
 
             <motion.div variants={itemVariants}>
-              <Card className="group relative h-full overflow-hidden border-2 border-border bg-card backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
+              <Card className="group relative h-full overflow-hidden border-2 border-border bg-card backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
                 <CardHeader className="text-center pb-4">
                   <motion.div
                     className="mx-auto mb-4 rounded-full bg-primary/10 p-4 text-primary transition-colors group-hover:bg-primary/20"
@@ -189,8 +210,13 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
                   <p className="text-muted-foreground mb-6">
                     Recommended for most modern Android devices with better performance.
                   </p>
-                  <Button size="lg" className="w-full" onClick={() => handleArchSelection("64")}>
-                    Select 64-bit
+                  <Button
+                    size="lg"
+                    className="w-full"
+                    onClick={() => handleArchSelection("64")}
+                    disabled={isNavigating}
+                  >
+                    {isNavigating ? "Loading..." : "Select 64-bit"}
                   </Button>
                 </CardContent>
               </Card>

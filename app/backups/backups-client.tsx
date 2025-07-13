@@ -31,6 +31,7 @@ interface BackupsClientProps {
 
 export default function BackupsClient({ backups }: BackupsClientProps) {
   const [isLoading, setIsLoading] = useState(true)
+  const [isNavigating, setIsNavigating] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -38,8 +39,22 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
     return () => clearTimeout(timer)
   }, [])
 
+  useEffect(() => {
+    if (isNavigating) {
+      const timer = setTimeout(() => setIsNavigating(false), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [isNavigating])
+
   const handleViewBackup = (backupName: string) => {
-    router.push(`/backups/view?id=${backupName}`)
+    console.log(`Viewing backup: ${backupName}`)
+    setIsNavigating(true)
+    try {
+      router.push(`/backups/view?id=${backupName}`)
+    } catch (error) {
+      console.error("Navigation error:", error)
+      setIsNavigating(false)
+    }
   }
 
   const containerVariants = {
@@ -61,12 +76,12 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
     },
   }
 
-  if (isLoading) {
+  if (isLoading || isNavigating) {
     return (
       <div className="flex-1 flex items-center justify-center py-24">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
           <LoadingSpinner size="lg" />
-          <p className="text-lg text-muted-foreground">Loading backups...</p>
+          <p className="text-lg text-muted-foreground">{isNavigating ? "Loading backup..." : "Loading backups..."}</p>
         </motion.div>
       </div>
     )
@@ -110,7 +125,7 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
                 }}
                 className="group"
               >
-                <Card className="relative h-full overflow-hidden border-border/50 bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
+                <Card className="relative h-full overflow-hidden border-2 border-border bg-card backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
                   <CardHeader className="pb-4">
                     <motion.div
                       className="mx-auto mb-4 rounded-full bg-primary/10 p-3 text-primary transition-colors group-hover:bg-primary/20"
@@ -129,9 +144,9 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
                     <p className="text-sm text-muted-foreground">
                       View details and download this backup configuration.
                     </p>
-                    <Button className="w-full" onClick={() => handleViewBackup(backup.name)}>
+                    <Button className="w-full" onClick={() => handleViewBackup(backup.name)} disabled={isNavigating}>
                       <HardDrive className="h-4 w-4 mr-2" />
-                      View Backup
+                      {isNavigating ? "Loading..." : "View Backup"}
                     </Button>
                   </CardContent>
                 </Card>
