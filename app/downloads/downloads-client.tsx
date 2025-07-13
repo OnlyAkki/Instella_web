@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Download, Triangle, Smartphone, Calendar, Tag, FileText } from "lucide-react"
 import { format } from "date-fns"
+import { useState, useEffect } from "react"
+import LoadingSpinner from "@/components/loading-spinner"
 
 interface GitHubReleaseAsset {
   browser_download_url: string
@@ -31,8 +33,17 @@ interface DownloadsClientProps {
 }
 
 export default function DownloadsClient({ releases, searchParams }: DownloadsClientProps) {
+  const [isLoading, setIsLoading] = useState(true)
+  const [downloadingAsset, setDownloadingAsset] = useState<string | null>(null)
+
   const latestRelease = releases.length > 0 ? releases[0] : null
   const selectedArch = searchParams.arch
+
+  useEffect(() => {
+    // Simulate loading time for better UX
+    const timer = setTimeout(() => setIsLoading(false), 500)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Function to get APKs for specific architecture
   const getAPKsForArch = (arch: string) => {
@@ -44,7 +55,7 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
         .forEach((asset) => {
           const assetName = asset.name.toLowerCase()
           const is32bit = assetName.includes("32") || assetName.includes("x86")
-          const is64bit = !is32bit // If not 32bit, assume 64bit
+          const is64bit = !is32bit
 
           if ((arch === "32" && is32bit) || (arch === "64" && is64bit)) {
             allAPKs.push({ asset, release })
@@ -55,10 +66,15 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
     return allAPKs
   }
 
-  // Function to get the most relevant release for the architecture
   const getArchRelease = (arch: string) => {
     const apks = getAPKsForArch(arch)
     return apks.length > 0 ? apks[0].release : latestRelease
+  }
+
+  const handleDownload = (assetName: string, downloadUrl: string) => {
+    setDownloadingAsset(assetName)
+    window.open(downloadUrl, "_blank", "noopener,noreferrer")
+    setTimeout(() => setDownloadingAsset(null), 2000)
   }
 
   const containerVariants = {
@@ -80,6 +96,17 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
     },
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-24">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
+          <LoadingSpinner size="lg" />
+          <p className="text-lg text-muted-foreground">Loading releases...</p>
+        </motion.div>
+      </div>
+    )
+  }
+
   if (!latestRelease) {
     return (
       <div className="flex-1 flex items-center justify-center py-24">
@@ -90,11 +117,7 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
       </div>
     )
   }
- <div className="text-center mt-8">
-                <Button variant="outline" asChild>
-                  <Link href="/downloads">← Back to Architecture Selection</Link>
-                </Button>
-              </div>
+
   return (
     <div className="flex-1 py-16 md:py-24">
       <div className="container mx-auto px-4">
@@ -111,7 +134,6 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
         </motion.div>
 
         {!selectedArch ? (
-          // Architecture Selection - No release info here
           <motion.div
             variants={containerVariants}
             initial="hidden"
@@ -165,7 +187,6 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
             </motion.div>
           </motion.div>
         ) : (
-          // Architecture-specific downloads with release info
           <div className="max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -183,7 +204,7 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
                   .slice(0, 2)
                   .map(({ asset }, index) => {
                     const isClone = asset.name.toLowerCase().includes("clone")
-                    const isStandard = !isClone
+                    const isDownloading = downloadingAsset === asset.name
 
                     return (
                       <motion.div
@@ -207,11 +228,22 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
                                 ? "Run multiple Instagram instances on your device"
                                 : "Standard single-instance version"}
                             </p>
-                            <Button asChild className="w-full">
-                              <Link href={asset.browser_download_url} target="_blank" rel="noopener noreferrer">
-                                <Download className="h-4 w-4 mr-2" />
-                                Download {isClone ? "Clone" : "Standard"}
-                              </Link>
+                            <Button
+                              className="w-full"
+                              onClick={() => handleDownload(asset.name, asset.browser_download_url)}
+                              disabled={isDownloading}
+                            >
+                              {isDownloading ? (
+                                <>
+                                  <LoadingSpinner size="sm" className="mr-2" />
+                                  Downloading...
+                                </>
+                              ) : (
+                                <>
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Download {isClone ? "Clone" : "Standard"}
+                                </>
+                              )}
                             </Button>
                           </CardContent>
                         </Card>
@@ -220,10 +252,13 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
                   })}
               </div>
 
-             
+              <div className="text-center mt-8">
+                <Button variant="outline" asChild>
+                  <Link href="/downloads">← Back to Architecture Selection</Link>
+                </Button>
+              </div>
             </motion.div>
 
-            {/* Release Information for selected architecture */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -231,7 +266,6 @@ export default function DownloadsClient({ releases, searchParams }: DownloadsCli
             >
               {(() => {
                 const archRelease = getArchRelease(selectedArch)
-                // Get total APK count for this specific release
                 const totalAPKsInRelease = archRelease
                   ? archRelease.assets.filter((asset) => asset.name.endsWith(".apk")).length
                   : 0

@@ -5,6 +5,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Folder, HardDrive, User } from "lucide-react"
+import { useState, useEffect } from "react"
+import LoadingSpinner from "@/components/loading-spinner"
 
 interface GitHubContent {
   name: string
@@ -28,6 +30,13 @@ interface BackupsClientProps {
 }
 
 export default function BackupsClient({ backups }: BackupsClientProps) {
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 500)
+    return () => clearTimeout(timer)
+  }, [])
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -45,6 +54,17 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
       y: 0,
       transition: { duration: 0.6, ease: "easeOut" },
     },
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-24">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
+          <LoadingSpinner size="lg" />
+          <p className="text-lg text-muted-foreground">Loading backups...</p>
+        </motion.div>
+      </div>
+    )
   }
 
   return (

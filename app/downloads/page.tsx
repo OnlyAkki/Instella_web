@@ -1,5 +1,3 @@
-"use client"
-
 import { getGitHubReleases } from "@/lib/github"
 import Footer from "@/components/footer"
 import DownloadsClient from "./downloads-client"
