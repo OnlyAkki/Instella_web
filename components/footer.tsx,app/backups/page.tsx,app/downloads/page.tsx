@@ -1,28 +1,27 @@
 components / footer.tsx
-;("use client")
+;("use client") // 1️⃣  must be first
+
 import { useTranslation } from "@/contexts/translation-context"
 
-const Footer = () => {
+export default function Footer() {
   const { t } = useTranslation()
 
   return (
     <footer className="border-t border-border/40 bg-background/95 backdrop-blur">
-      {/* Content of the footer */}
-      <p>{t("footer.copyright")}</p>
+      {/* …existing footer markup… */}
+      <p className="text-sm">{t("madeWith")}</p>
     </footer>
   )
 }
-
-export default Footer
 
 app / backups / page.tsx
 import { getGitHubRepoContents } from "@/lib/github"
 import BackupsClient from "./backups-client"
 import Footer from "@/components/footer"
 
-export const dynamic = "force-dynamic"
+export const dynamic = "force-dynamic" // 1️⃣  tell Next.js this page is always dynamic
 
-export default async function BackupsPage() {
+export default async function BackupsPage() { // 2️⃣  default export restored
   const backupFolders = await getGitHubRepoContents("OnlyAkki", "Instella_Backup")
   const validBackups = backupFolders.filter((item) => item.type === "dir" && item.name !== ".github")
 
@@ -39,14 +38,14 @@ import { getGitHubReleases } from "@/lib/github"
 import DownloadsClient from "./downloads-client"
 import Footer from "@/components/footer"
 
-export const dynamic = "force-dynamic"
-
 interface DownloadsPageProps {
   searchParams: { version?: string; arch?: string }
 }
 
-export default async function DownloadsPage({ searchParams }: DownloadsPageProps) {
-  const releases = await getGitHubReleases('OnlyAbhii', 'instella_app')
+export const dynamic = "force-dynamic" // 1️⃣  dynamic page flag
+
+export default async function DownloadsPage({ searchParams }: DownloadsPageProps) { // 2️⃣ default export intact
+  const releases = await getGitHubReleases("OnlyAbhii", "instella_app")
 
   return (
     <div className="flex flex-col min-h-screen">
