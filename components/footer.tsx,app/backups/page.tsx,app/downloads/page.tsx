@@ -30,6 +30,7 @@ const BackupsPage = async () => {
 }
 
 export default BackupsPage
+export const dynamic = "force-dynamic"
 
 app / downloads / page.tsx
 import { getGitHubReleases } from "@/lib/github"
@@ -48,3 +49,4 @@ const DownloadsPage = async ({ searchParams }) => {
 }
 
 export default DownloadsPage
+export const dynamic = "force-dynamic"
