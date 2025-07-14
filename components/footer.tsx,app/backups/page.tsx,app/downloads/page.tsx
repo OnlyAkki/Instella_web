@@ -1,16 +1,42 @@
 components / footer.tsx
-\`\`\`tsx
-"use client"
-\`\`\`
+;("use client")
 
-app/backups/page.tsx
-\`\`\`tsx
-// Ensure this page is rendered on the server (not statically) because it
-// performs dynamic GitHub API requests.
-export const dynamic = "force-dynamic"
-\`\`\`
+const FooterWrapper = () => {
+  return <div>Footer Component</div>
+}
 
-app/downloads/page.tsx
-\`\`\`tsx
-export const dynamic = "force-dynamic"
-\`\`\`
+export default FooterWrapper
+
+app / backups / page.tsx
+import { getGitHubRepoContents } from "@/lib/github"
+import BackupsClient from "./backups-client"
+import FooterWrapper from "@/components/footer"
+
+const BackupsPage = () => {
+  const repoContents = getGitHubRepoContents()
+  return (
+    <div>
+      <BackupsClient repoContents={repoContents} />
+      <FooterWrapper />
+    </div>
+  )
+}
+
+export default BackupsPage;
+
+app / downloads / page.tsx
+import { getGitHubReleases } from "@/lib/github"
+import DownloadsClient from "./downloads-client"
+import FooterWrapper from "@/components/footer"
+
+const DownloadsPage = () => {
+  const releases = getGitHubReleases()
+  return (
+    <div>
+      <DownloadsClient releases={releases} />
+      <FooterWrapper />
+    </div>
+  )
+}
+
+export default DownloadsPage;
