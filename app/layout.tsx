@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { TranslationProvider } from "@/contexts/translation-context"
 import { cn } from "@/lib/utils"
 import Header from "@/components/header"
 
@@ -23,10 +24,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange={false}>
-          <Header />
-          <main className="min-h-screen">{children}</main>
-        </ThemeProvider>
+        <TranslationProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange={false}>
+            <Header />
+            <main className="min-h-screen">{children}</main>
+          </ThemeProvider>
+        </TranslationProvider>
       </body>
     </html>
   )

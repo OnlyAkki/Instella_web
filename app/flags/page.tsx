@@ -3,8 +3,11 @@
 import { motion } from "framer-motion"
 import Footer from "@/components/footer"
 import { Wrench, Construction } from "lucide-react"
+import { useTranslation } from "@/contexts/translation-context"
 
 export default function FlagsPage() {
+  const { t } = useTranslation()
+
   return (
     <div className="flex flex-col min-h-screen">
       <div className="flex-1 flex items-center justify-center py-24">
@@ -35,7 +38,7 @@ export default function FlagsPage() {
             transition={{ delay: 0.3, duration: 0.6 }}
             className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl"
           >
-            🚧 Under Development 🚧
+            {t("underDevelopment")}
           </motion.h1>
 
           <motion.p
@@ -44,7 +47,7 @@ export default function FlagsPage() {
             transition={{ delay: 0.5, duration: 0.6 }}
             className="text-lg text-muted-foreground max-w-md mx-auto"
           >
-            The Flags page is currently being developed. Check back soon for exciting new features!
+            {t("flagsPageDesc")}
           </motion.p>
 
           <motion.div
@@ -54,7 +57,7 @@ export default function FlagsPage() {
             className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
           >
             <Wrench className="h-4 w-4" />
-            <span>Coming Soon</span>
+            <span>{t("comingSoon")}</span>
           </motion.div>
         </motion.div>
       </div>

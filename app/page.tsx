@@ -6,28 +6,31 @@ import { Button } from "@/components/ui/button"
 import FeatureCard from "@/components/feature-card"
 import Footer from "@/components/footer"
 import { Rocket, Brain, Package, XCircle, Download } from "lucide-react"
+import { useTranslation } from "@/contexts/translation-context"
 
 export default function HomePage() {
+  const { t } = useTranslation()
+
   const features = [
     {
       icon: <Rocket className="h-6 w-6" />,
-      title: "Faster Updates",
-      description: "Get the latest features and bug fixes delivered quickly to your device.",
+      title: t("fasterUpdates"),
+      description: t("fasterUpdatesDesc"),
     },
     {
       icon: <Brain className="h-6 w-6" />,
-      title: "32-bit Support",
-      description: "Compatible with a wider range of Android devices, including older hardware.",
+      title: t("support32bit"),
+      description: t("support32bitDesc"),
     },
     {
       icon: <Package className="h-6 w-6" />,
-      title: "Clone Support",
-      description: "Run multiple instances of Instagram on a single device seamlessly.",
+      title: t("cloneSupport"),
+      description: t("cloneSupportDesc"),
     },
     {
       icon: <XCircle className="h-6 w-6" />,
-      title: "Ad-Free Experience",
-      description: "Enjoy Instagram without interruptions from advertisements.",
+      title: t("adFree"),
+      description: t("adFreeDesc"),
     },
   ]
 
@@ -50,7 +53,7 @@ export default function HomePage() {
               transition={{ duration: 0.8, delay: 0.2 }}
             >
               <span className="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                Instella App
+                {t("heroTitle")}
               </span>
             </motion.h1>
 
@@ -60,7 +63,7 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
             >
-              The Best iOS-style Instagram for Android!
+              {t("heroSubtitle")}
             </motion.p>
 
             <motion.div
@@ -76,7 +79,7 @@ export default function HomePage() {
                     whileHover={{ x: 2 }}
                     transition={{ type: "spring", stiffness: 400, damping: 10 }}
                   >
-                    Download Now
+                    {t("downloadNow")}
                     <Download className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </motion.span>
                 </Link>
@@ -96,10 +99,8 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-4">Why Choose Instella?</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Experience Instagram like never before with our enhanced features and optimizations.
-            </p>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-4">{t("whyChoose")}</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{t("whyChooseSubtitle")}</p>
           </motion.div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

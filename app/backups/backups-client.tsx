@@ -4,9 +4,10 @@ import { motion } from "framer-motion"
 import { useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Folder, User, File } from "lucide-react" // Import File icon
+import { Folder, User, File } from "lucide-react"
 import { useState, useEffect } from "react"
 import LoadingSpinner from "@/components/loading-spinner"
+import { useTranslation } from "@/contexts/translation-context"
 
 interface GitHubContent {
   name: string
@@ -30,6 +31,7 @@ interface BackupsClientProps {
 }
 
 export default function BackupsClient({ backups }: BackupsClientProps) {
+  const { t } = useTranslation()
   const [isNavigating, setIsNavigating] = useState(false)
   const [initialDataLoaded, setInitialDataLoaded] = useState(false)
   const router = useRouter()
@@ -106,7 +108,7 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
       <div className="flex-1 flex items-center justify-center py-24">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
           <LoadingSpinner size="lg" />
-          <p className="text-lg text-muted-foreground">{isNavigating ? "Loading backup..." : "Loading backups..."}</p>
+          <p className="text-lg text-muted-foreground">{isNavigating ? t("loadingBackup") : t("loadingBackups")}</p>
         </motion.div>
       </div>
     )
@@ -121,17 +123,15 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl mb-4">Backup Library</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Browse and download community-created backups for Instella App.
-          </p>
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl mb-4">{t("backupLibrary")}</h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{t("backupLibraryDesc")}</p>
         </motion.div>
 
         {initialDataLoaded && backups.length === 0 ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16">
             <Folder className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold mb-2">No Backups Found</h2>
-            <p className="text-muted-foreground">Check back later for community backups.</p>
+            <h2 className="text-xl font-semibold mb-2">{t("noBackups")}</h2>
+            <p className="text-muted-foreground">{t("checkBackBackups")}</p>
           </motion.div>
         ) : (
           <motion.div
@@ -157,21 +157,19 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
                       whileHover={{ scale: 1.1, rotate: 5 }}
                       transition={{ type: "spring", stiffness: 400, damping: 10 }}
                     >
-                      <File className="h-6 w-6" /> {/* Changed icon here */}
+                      <File className="h-6 w-6" />
                     </motion.div>
                     <CardTitle className="text-lg text-center">{backup.name}</CardTitle>
                   </CardHeader>
                   <CardContent className="text-center space-y-4">
                     <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                       <User className="h-4 w-4" />
-                      <span>Community Backup</span>
+                      <span>{t("communityBackup")}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      View details and download this backup configuration.
-                    </p>
+                    <p className="text-sm text-muted-foreground">{t("viewDetails")}</p>
                     <Button className="w-full" onClick={() => handleViewBackup(backup.name)} disabled={isNavigating}>
-                      <File className="h-4 w-4 mr-2" /> {/* Changed icon here */}
-                      {isNavigating ? "Loading..." : "View Backup"}
+                      <File className="h-4 w-4 mr-2" />
+                      {isNavigating ? t("loading") : t("viewBackup")}
                     </Button>
                   </CardContent>
                 </Card>

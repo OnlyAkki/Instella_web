@@ -9,6 +9,7 @@ import { Download, Triangle, Smartphone, Calendar, Tag, FileText } from "lucide-
 import { format } from "date-fns"
 import { useState, useEffect } from "react"
 import LoadingSpinner from "@/components/loading-spinner"
+import { useTranslation } from "@/contexts/translation-context"
 
 interface GitHubReleaseAsset {
   browser_download_url: string
@@ -30,6 +31,7 @@ interface DownloadsClientProps {
 }
 
 export default function DownloadsClient({ releases }: DownloadsClientProps) {
+  const { t } = useTranslation()
   const [isNavigating, setIsNavigating] = useState(false)
   const [downloadingAsset, setDownloadingAsset] = useState<string | null>(null)
   const router = useRouter()
@@ -40,7 +42,6 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
 
   const [isLoading, setIsLoading] = useState(releases.length === 0)
 
-  // Log component render state
   console.log(
     "DownloadsClient render: selectedArch =",
     selectedArch,
@@ -56,20 +57,16 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
     }
   }, [releases])
 
-  // This useEffect will now specifically handle navigation state based on selectedArch
   useEffect(() => {
     console.log("DownloadsClient: useEffect for navigation state triggered.")
     console.log("  Current selectedArch in useEffect:", selectedArch)
     console.log("  Current isNavigating in useEffect:", isNavigating)
 
-    // If selectedArch changes (meaning navigation has completed or page loaded with arch param)
-    // and we were previously navigating, set isNavigating to false.
-    // This covers both selecting an arch and navigating back to the main downloads page.
     if (isNavigating) {
       console.log("DownloadsClient: Navigation completed. Setting isNavigating to false.")
       setIsNavigating(false)
     }
-  }, [selectedArch]) // Only depend on selectedArch. isNavigating is updated by handleArchSelection.
+  }, [selectedArch])
 
   const handleArchSelection = (arch: string) => {
     console.log(`DownloadsClient: Selecting architecture: ${arch}. Setting isNavigating to true.`)
@@ -95,7 +92,6 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
       })
     })
 
-    // Sort by release date (latest first)
     relevantAPKs.sort((a, b) => new Date(b.release.published_at).getTime() - new Date(a.release.published_at).getTime())
 
     return relevantAPKs
@@ -103,7 +99,6 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
 
   const getArchRelease = (arch: string) => {
     const apks = getAPKsForArch(arch)
-    // Find the latest release that contains any APK for the selected architecture
     return apks.length > 0 ? apks[0].release : latestRelease
   }
 
@@ -132,16 +127,13 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
     },
   }
 
-  // This condition is crucial. If selectedArch is null, it should show the selection.
-  // If isNavigating is true, it should show the loading spinner.
-  // The order matters: if isNavigating is true, we show loading regardless of selectedArch.
   if (isLoading || isNavigating) {
     console.log("DownloadsClient: Showing loading state. isLoading:", isLoading, "isNavigating:", isNavigating)
     return (
       <div className="flex-1 flex items-center justify-center py-24">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
           <LoadingSpinner size="lg" />
-          <p className="text-lg text-muted-foreground">{isNavigating ? "Loading..." : "Loading releases..."}</p>
+          <p className="text-lg text-muted-foreground">{isNavigating ? t("loading") : t("loadingReleases")}</p>
         </motion.div>
       </div>
     )
@@ -152,8 +144,8 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
     return (
       <div className="flex-1 flex items-center justify-center py-24">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-          <h1 className="text-2xl font-bold mb-4">No Releases Found</h1>
-          <p className="text-muted-foreground">Please check back later for updates.</p>
+          <h1 className="text-2xl font-bold mb-4">{t("noReleases")}</h1>
+          <p className="text-muted-foreground">{t("checkBackLater")}</p>
         </motion.div>
       </div>
     )
@@ -180,10 +172,6 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
   return (
     <div className="flex-1 py-16 md:py-24">
       <div className="container mx-auto px-4">
-        {/* The "Back to Architecture Selection" button has been removed from here */}
-
-       
-
         {!selectedArch ? (
           <motion.div
             variants={containerVariants}
@@ -201,19 +189,17 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
                   >
                     <Smartphone className="h-8 w-8" />
                   </motion.div>
-                  <CardTitle className="text-2xl">32-bit Version</CardTitle>
+                  <CardTitle className="text-2xl">{t("version32bit")}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <p className="text-muted-foreground mb-6">
-                    Compatible with older devices and specific hardware configurations.
-                  </p>
+                  <p className="text-muted-foreground mb-6">{t("compatibleOlder")}</p>
                   <Button
                     size="lg"
                     className="w-full"
                     onClick={() => handleArchSelection("32")}
                     disabled={isNavigating}
                   >
-                    {isNavigating ? "Loading..." : "Select 32-bit"}
+                    {isNavigating ? t("loading") : t("select32bit")}
                   </Button>
                 </CardContent>
               </Card>
@@ -229,19 +215,17 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
                   >
                     <Triangle className="h-8 w-8" />
                   </motion.div>
-                  <CardTitle className="text-2xl">64-bit Version</CardTitle>
+                  <CardTitle className="text-2xl">{t("version64bit")}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <p className="text-muted-foreground mb-6">
-                    Recommended for most modern Android devices with better performance.
-                  </p>
+                  <p className="text-muted-foreground mb-6">{t("recommendedModern")}</p>
                   <Button
                     size="lg"
                     className="w-full"
                     onClick={() => handleArchSelection("64")}
                     disabled={isNavigating}
                   >
-                    {isNavigating ? "Loading..." : "Select 64-bit"}
+                    {isNavigating ? t("loading") : t("select64bit")}
                   </Button>
                 </CardContent>
               </Card>
@@ -256,8 +240,11 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
               className="mb-16"
             >
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold mb-2">{selectedArch}-bit Version Selected</h2>
-                <p className="text-muted-foreground">Choose between Clone and Standard versions</p>
+                <h2 className="text-2xl font-bold mb-2">
+                  {selectedArch}
+                  {t("versionSelected")}
+                </h2>
+                <p className="text-muted-foreground">{t("chooseBetween")}</p>
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
@@ -275,15 +262,15 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
                       <Card className="group relative overflow-hidden border-2 border-border bg-card backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
                         <CardContent className="p-6">
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold text-lg">{isClone ? "Clone Version" : "Standard Version"}</h3>
+                            <h3 className="font-semibold text-lg">
+                              {isClone ? t("cloneVersion") : t("standardVersion")}
+                            </h3>
                             <span className="text-sm text-muted-foreground">
                               {(asset.size / 1024 / 1024).toFixed(1)} MB
                             </span>
                           </div>
                           <p className="text-muted-foreground text-sm mb-4">
-                            {isClone
-                              ? "Run multiple Instagram instances on your device"
-                              : "Standard single-instance version"}
+                            {isClone ? t("runMultiple") : t("standardSingle")}
                           </p>
                           <Button
                             className="w-full"
@@ -293,12 +280,12 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
                             {isDownloading ? (
                               <>
                                 <LoadingSpinner size="sm" className="mr-2" />
-                                Downloading...
+                                {t("downloading")}
                               </>
                             ) : (
                               <>
                                 <Download className="h-4 w-4 mr-2" />
-                                Download {isClone ? "Clone" : "Standard"}
+                                {isClone ? t("downloadClone") : t("downloadStandard")}
                               </>
                             )}
                           </Button>
@@ -334,18 +321,20 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Calendar className="h-4 w-4" />
                           <span>
-                            Released: {archRelease ? format(new Date(archRelease.published_at), "PPP") : "N/A"}
+                            {t("released")} {archRelease ? format(new Date(archRelease.published_at), "PPP") : t("na")}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <FileText className="h-4 w-4" />
-                          <span>{totalAPKsInRelease} files available</span>
+                          <span>
+                            {totalAPKsInRelease} {t("filesAvailable")}
+                          </span>
                         </div>
                       </div>
 
                       {archRelease?.body && (
                         <div>
-                          <h3 className="font-semibold mb-2">Release Notes</h3>
+                          <h3 className="font-semibold mb-2">{t("releaseNotes")}</h3>
                           <div className="prose prose-sm max-w-none dark:prose-invert">
                             <pre className="whitespace-pre-wrap text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg border border-border">
                               {archRelease.body}
@@ -356,7 +345,7 @@ export default function DownloadsClient({ releases }: DownloadsClientProps) {
 
                       {releases.length > 1 && (
                         <div>
-                          <h3 className="font-semibold mb-4">Other Versions</h3>
+                          <h3 className="font-semibold mb-4">{t("otherVersions")}</h3>
                           <div className="flex flex-wrap gap-2">
                             {releases.slice(1, 6).map((release) => (
                               <Button key={release.tag_name} variant="outline" size="sm" asChild>

@@ -1,22 +1,25 @@
 "use client"
 
 import Link from "next/link"
-import { Moon, Sun, Menu, X } from "lucide-react"
+import { Moon, Sun, Menu, X, Instagram } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { motion, AnimatePresence } from "framer-motion"
 import { useState } from "react"
+import { useTranslation } from "@/contexts/translation-context"
+import LanguageSelector from "./language-selector"
 
 export default function Header() {
   const { setTheme } = useTheme()
+  const { t } = useTranslation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const navItems = [
-    { href: "/", label: "Home" },
-    { href: "/downloads", label: "Downloads" },
-    { href: "/backups", label: "Backups" },
-    { href: "/flags", label: "Flags" },
+    { href: "/", label: t("home") },
+    { href: "/downloads", label: t("downloads") },
+    { href: "/backups", label: t("backups") },
+    { href: "/flags", label: t("flags") },
   ]
 
   return (
@@ -27,15 +30,25 @@ export default function Header() {
       className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
     >
       <div className="container flex h-16 items-center justify-between px-4">
-        <Link href="/" className="flex items-center space-x-2">
-          <motion.span
-            className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent"
-            whileHover={{ scale: 1.05 }}
+        <div className="flex items-center space-x-3">
+          {/* Instagram Icon */}
+          <motion.div
+            whileHover={{ scale: 1.1, rotate: 5 }}
             transition={{ type: "spring", stiffness: 400, damping: 10 }}
           >
-            Instella
-          </motion.span>
-        </Link>
+            <Instagram className="h-6 w-6 text-primary" />
+          </motion.div>
+
+          <Link href="/" className="flex items-center space-x-2">
+            <motion.span
+              className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent"
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            >
+              Instella
+            </motion.span>
+          </Link>
+        </div>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
@@ -49,6 +62,9 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center space-x-2">
+          {/* Language Selector */}
+          <LanguageSelector />
+
           {/* Theme Toggle */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
