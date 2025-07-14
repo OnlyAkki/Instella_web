@@ -1,42 +1,50 @@
 components / footer.tsx
 ;("use client")
+import { useTranslation } from "@/contexts/translation-context"
 
-const FooterWrapper = () => {
-  return <div>Footer Component</div>
+const Footer = () => {
+  const { t } = useTranslation()
+
+  return (
+    <footer className="border-t border-border/40 bg-background/95 backdrop-blur">{/* Content of the footer */}</footer>
+  )
 }
 
-export default FooterWrapper
+export default Footer
 
 app / backups / page.tsx
 import { getGitHubRepoContents } from "@/lib/github"
 import BackupsClient from "./backups-client"
-import FooterWrapper from "@/components/footer"
+import Footer from "@/components/footer"
 
-const BackupsPage = () => {
-  const repoContents = getGitHubRepoContents()
+const BackupsPage = async () => {
+  const backupFolders = await getGitHubRepoContents("OnlyAkki", "Instella_Backup")
+  const validBackups = backupFolders.filter((item) => item.type === "dir" && item.name !== ".github")
+
   return (
-    <div>
-      <BackupsClient repoContents={repoContents} />
-      <FooterWrapper />
+    <div className="flex flex-col min-h-screen">
+      <BackupsClient backups={validBackups} />
+      <Footer />
     </div>
   )
 }
 
-export default BackupsPage;
+export default BackupsPage
 
 app / downloads / page.tsx
 import { getGitHubReleases } from "@/lib/github"
 import DownloadsClient from "./downloads-client"
-import FooterWrapper from "@/components/footer"
+import Footer from "@/components/footer"
 
-const DownloadsPage = () => {
-  const releases = getGitHubReleases()
+const DownloadsPage = async ({ searchParams }) => {
+  const releases = await getGitHubReleases("OnlyAbhii", "instella_app")
+
   return (
-    <div>
-      <DownloadsClient releases={releases} />
-      <FooterWrapper />
+    <div className="flex flex-col min-h-screen">
+      <DownloadsClient releases={releases} searchParams={searchParams} />
+      <Footer />
     </div>
   )
 }
 
-export default DownloadsPage;
+export default DownloadsPage
