@@ -1,5 +1,5 @@
 components / footer.tsx
-;("use client")
+;('use client')
 
 import { useTranslation } from "@/contexts/translation-context"
 
