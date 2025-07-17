@@ -34,77 +34,38 @@ interface BackupsClientProps {
 export default function BackupsClient({ backups }: BackupsClientProps) {
   const { t } = useTranslation()
   const [isNavigating, setIsNavigating] = useState(false)
-  const [initialDataLoaded, setInitialDataLoaded] = useState(false)
   const [clientBackups, setClientBackups] = useState<GitHubContent[]>(backups)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const pathname = usePathname()
-
-  console.log(
-    "BackupsClient render: initialDataLoaded =",
-    initialDataLoaded,
-    "isNavigating =",
-    isNavigating,
-    "clientBackups.length =",
-    clientBackups.length,
-    "URL:",
-    typeof window !== "undefined" ? window.location.href : "N/A",
-  )
-  console.log("BackupsClient render: Current clientBackups:", clientBackups)
 
   // Fetch backups data on client side
   useEffect(() => {
     const fetchBackups = async () => {
       try {
-        console.log("BackupsClient: Fetching GitHub repo contents for backups...")
         setIsLoading(true)
         setError(null)
         
         const backupFolders = await getGitHubRepoContents("OnlyAkki", "Instella_Backup")
-        console.log("BackupsClient: Raw backupFolders fetched:", backupFolders)
-
         const validBackups = backupFolders.filter((item) => item.type === "dir" && item.name !== ".github")
-        console.log("BackupsClient: Filtered validBackups:", validBackups)
         
         setClientBackups(validBackups)
-        setInitialDataLoaded(true)
       } catch (err) {
-        console.error("BackupsClient: Error fetching backups:", err)
+        console.error("Error fetching backups:", err)
         setError(err instanceof Error ? err.message : "Failed to fetch backups")
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchBackups()
-  }, [])
-
-  useEffect(() => {
-    if (!initialDataLoaded && clientBackups.length > 0) {
-     console.log("BackupsClient: Initial data loaded. Setting initialDataLoaded to true.")
-     setInitialDataLoaded(true)
+    // Only fetch if initial props are empty
+    if (backups.length === 0) {
+      fetchBackups()
     }
-  }, [clientBackups, initialDataLoaded])
-
-  useEffect(() => {
-    console.log("BackupsClient: useEffect for navigation state triggered by pathname change.")
-    console.log("  Current pathname in useEffect:", pathname)
-    console.log("  Current isNavigating in useEffect:", isNavigating)
-
-    if (isNavigating) {
-      const timer = setTimeout(() => {
-        console.log("BackupsClient: Setting isNavigating to false after pathname update.")
-        setIsNavigating(false)
-      }, 50)
-      return () => clearTimeout(timer)
-    }
-  }, [pathname, isNavigating])
+  }, [backups])
 
   const handleViewBackup = (backupName: string) => {
-    console.log(
-      `BackupsClient: Attempting to navigate to /backups/view?id=${backupName}. Setting isNavigating to true.`,
-    )
     setIsNavigating(true)
     router.push(`/backups/view?id=${backupName}`)
   }
@@ -128,32 +89,30 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
     },
   }
 
-  // Show error state
-  if (error && !isLoading) {
+  if (error) {
     return (
       <div className="flex-1 flex items-center justify-center py-24">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
           <Folder className="h-16 w-16 mx-auto mb-4 text-destructive" />
-          <h2 className="text-xl font-semibold mb-2">{t("errorLoadingBackups") || "Error Loading Backups"}</h2>
+          <h2 className="text-xl font-semibold mb-2">{t("errorLoadingBackups")}</h2>
           <p className="text-muted-foreground">{error}</p>
-          <Button onClick={() => window.location.reload()}>{t("retry") || "Retry"}</Button>
+          <Button 
+            onClick={() => window.location.reload()}
+            variant="outline"
+          >
+            {t("retry")}
+          </Button>
         </motion.div>
       </div>
     )
   }
 
-  if (isLoading || isNavigating) {
-    console.log(
-     "BackupsClient: Showing loading state. !initialDataLoaded:",
-      isLoading,
-     "isNavigating:",
-     isNavigating,
-    )
+  if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center py-24">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
           <LoadingSpinner size="lg" />
-          <p className="text-lg text-muted-foreground">{isNavigating ? t("loadingBackup") : t("loadingBackups")}</p>
+          <p className="text-lg text-muted-foreground">{t("loadingBackups")}</p>
         </motion.div>
       </div>
     )
@@ -168,11 +127,15 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl mb-4">{t("backupLibrary")}</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{t("backupLibraryDesc")}</p>
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl mb-4">
+            {t("backupLibrary")}
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            {t("backupLibraryDesc")}
+          </p>
         </motion.div>
 
-        {!isLoading && clientBackups.length === 0 ? (
+        {clientBackups.length === 0 ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16">
             <Folder className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-xl font-semibold mb-2">{t("noBackups")}</h2>
@@ -185,7 +148,7 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
             animate="visible"
             className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
           >
-            {clientBackups.map((backup, index) => (
+            {clientBackups.map((backup) => (
               <motion.div
                 key={backup.name}
                 variants={itemVariants}
@@ -193,27 +156,24 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
                   y: -8,
                   transition: { duration: 0.3, ease: "easeOut" },
                 }}
-                className="group"
               >
-                <Card className="relative h-full overflow-hidden border-2 border-border bg-card backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
+                <Card className="h-full transition-all hover:shadow-lg">
                   <CardHeader className="pb-4">
-                    <motion.div
-                      className="mx-auto mb-4 rounded-full bg-primary/10 p-3 text-primary transition-colors group-hover:bg-primary/20"
-                      whileHover={{ scale: 1.1, rotate: 5 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                    >
+                    <div className="mx-auto mb-4 rounded-full bg-primary/10 p-3 text-primary">
                       <File className="h-6 w-6" />
-                    </motion.div>
-                    <CardTitle className="text-lg text-center">{backup.name}</CardTitle>
+                    </div>
+                    <CardTitle className="text-center">{backup.name}</CardTitle>
                   </CardHeader>
                   <CardContent className="text-center space-y-4">
-                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex justify-center items-center gap-2 text-sm text-muted-foreground">
                       <User className="h-4 w-4" />
                       <span>{t("communityBackup")}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">{t("viewDetails")}</p>
-                    <Button className="w-full" onClick={() => handleViewBackup(backup.name)} disabled={isNavigating}>
-                      <File className="h-4 w-4 mr-2" />
+                    <Button 
+                      className="w-full" 
+                      onClick={() => handleViewBackup(backup.name)}
+                      disabled={isNavigating}
+                    >
                       {isNavigating ? t("loading") : t("viewBackup")}
                     </Button>
                   </CardContent>
