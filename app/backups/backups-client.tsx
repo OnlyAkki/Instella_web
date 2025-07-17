@@ -8,6 +8,7 @@ import { Folder, User, File } from "lucide-react"
 import { useState, useEffect } from "react"
 import LoadingSpinner from "@/components/loading-spinner"
 import { useTranslation } from "@/contexts/translation-context"
+import { getGitHubRepoContents } from "@/lib/github"
 
 interface GitHubContent {
   name: string
@@ -34,6 +35,9 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
   const { t } = useTranslation()
   const [isNavigating, setIsNavigating] = useState(false)
   const [initialDataLoaded, setInitialDataLoaded] = useState(false)
+  const [clientBackups, setClientBackups] = useState<GitHubContent[]>(backups)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -42,19 +46,46 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
     initialDataLoaded,
     "isNavigating =",
     isNavigating,
-    "backups.length =",
-    backups.length,
+    "clientBackups.length =",
+    clientBackups.length,
     "URL:",
     typeof window !== "undefined" ? window.location.href : "N/A",
   )
-  console.log("BackupsClient render: Received backups prop:", backups)
+  console.log("BackupsClient render: Current clientBackups:", clientBackups)
+
+  // Fetch backups data on client side
+  useEffect(() => {
+    const fetchBackups = async () => {
+      try {
+        console.log("BackupsClient: Fetching GitHub repo contents for backups...")
+        setIsLoading(true)
+        setError(null)
+        
+        const backupFolders = await getGitHubRepoContents("OnlyAkki", "Instella_Backup")
+        console.log("BackupsClient: Raw backupFolders fetched:", backupFolders)
+
+        const validBackups = backupFolders.filter((item) => item.type === "dir" && item.name !== ".github")
+        console.log("BackupsClient: Filtered validBackups:", validBackups)
+        
+        setClientBackups(validBackups)
+        setInitialDataLoaded(true)
+      } catch (err) {
+        console.error("BackupsClient: Error fetching backups:", err)
+        setError(err instanceof Error ? err.message : "Failed to fetch backups")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchBackups()
+  }, [])
 
   useEffect(() => {
-    if (!initialDataLoaded && backups) {
-      console.log("BackupsClient: Initial data loaded. Setting initialDataLoaded to true.")
-      setInitialDataLoaded(true)
+    if (!initialDataLoaded && clientBackups.length > 0) {
+     console.log("BackupsClient: Initial data loaded. Setting initialDataLoaded to true.")
+     setInitialDataLoaded(true)
     }
-  }, [backups, initialDataLoaded])
+  }, [clientBackups, initialDataLoaded])
 
   useEffect(() => {
     console.log("BackupsClient: useEffect for navigation state triggered by pathname change.")
@@ -97,12 +128,26 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
     },
   }
 
-  if (!initialDataLoaded || isNavigating) {
+  // Show error state
+  if (error && !isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-24">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6">
+          <Folder className="h-16 w-16 mx-auto mb-4 text-destructive" />
+          <h2 className="text-xl font-semibold mb-2">{t("errorLoadingBackups") || "Error Loading Backups"}</h2>
+          <p className="text-muted-foreground">{error}</p>
+          <Button onClick={() => window.location.reload()}>{t("retry") || "Retry"}</Button>
+        </motion.div>
+      </div>
+    )
+  }
+
+  if (isLoading || isNavigating) {
     console.log(
-      "BackupsClient: Showing loading state. !initialDataLoaded:",
-      !initialDataLoaded,
-      "isNavigating:",
-      isNavigating,
+     "BackupsClient: Showing loading state. !initialDataLoaded:",
+      isLoading,
+     "isNavigating:",
+     isNavigating,
     )
     return (
       <div className="flex-1 flex items-center justify-center py-24">
@@ -127,7 +172,7 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{t("backupLibraryDesc")}</p>
         </motion.div>
 
-        {initialDataLoaded && backups.length === 0 ? (
+        {!isLoading && clientBackups.length === 0 ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16">
             <Folder className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-xl font-semibold mb-2">{t("noBackups")}</h2>
@@ -140,7 +185,7 @@ export default function BackupsClient({ backups }: BackupsClientProps) {
             animate="visible"
             className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
           >
-            {backups.map((backup, index) => (
+            {clientBackups.map((backup, index) => (
               <motion.div
                 key={backup.name}
                 variants={itemVariants}
