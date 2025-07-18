@@ -13,11 +13,13 @@ export default function Footer() {
 }
 
 
-app / backups / page.tsx
 export const dynamic = "force-dynamic"
+
+import dynamic from "next/dynamic"
 import { getGitHubRepoContents } from "@/lib/github"
 import BackupsClient from "./backups-client"
-import Footer from "@/components/footer"
+
+const Footer = dynamic(() => import("@/components/footer"), { ssr: false })
 
 export default async function BackupsPage() {
   const folders = await getGitHubRepoContents("OnlyAkki", "Instella_Backup")
@@ -31,10 +33,12 @@ export default async function BackupsPage() {
   )
 }
 
-app / downloads / page.tsx
+
+import dynamic from "next/dynamic"
 import { getGitHubReleases } from "@/lib/github"
 import DownloadsClient from "./downloads-client"
-import Footer from "@/components/footer"
+
+const Footer = dynamic(() => import("@/components/footer"), { ssr: false })
 
 interface DownloadsPageProps {
   searchParams: { arch?: string; version?: string }
