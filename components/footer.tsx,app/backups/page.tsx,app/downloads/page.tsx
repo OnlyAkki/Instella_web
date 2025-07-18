@@ -20,20 +20,46 @@ export default function Footer() {
   )
 }
 
-// app/backups/backups-client.tsx
 'use client'
 
 import { TranslationProvider } from "@/contexts/translation-context"
 import Footer from "@/components/footer"
 
-export default function BackupsClient({ backups }: { backups: any[] }) {
+// Define the expected shape of a backup object
+interface Backup {
+  name: string;
+  path: string;
+  html_url?: string; // Optional, for linking to GitHub
+  // Add other relevant properties from getGitHubRepoContents if needed
+}
+
+interface BackupsClientProps {
+  backups: Backup[];
+}
+
+export default function BackupsClient({ backups }: BackupsClientProps) {
   return (
     <TranslationProvider>
-      <main className="flex-1">
-        {/* Your backups content here */}
-        {backups.map(backup => (
-          <div key={backup.name}>{backup.name}</div>
-        ))}
+      <main className="flex-1 p-6">
+        <h1 className="text-2xl font-bold mb-4">Backups</h1>
+        {backups.length === 0 ? (
+          <p className="text-gray-500">No backups found.</p>
+        ) : (
+          <ul className="space-y-4">
+            {backups.map(backup => (
+              <li key={backup.name} className="border-b pb-2">
+                <a
+                  href={backup.html_url || `#`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline"
+                >
+                  {backup.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
       </main>
       <Footer />
     </TranslationProvider>
@@ -43,15 +69,13 @@ export default function BackupsClient({ backups }: { backups: any[] }) {
 // app/backups/page.tsx
 export const dynamic = "force-dynamic"
 import { getGitHubRepoContents } from "@/lib/github"
-import BackupsClient from "./backups-client"
+import DownloadsClient from "./downloads-client"
 
-export default async function BackupsPage() {
-  const folders = await getGitHubRepoContents("OnlyAkki", "Instella_Backup")
-  const backups = folders.filter((f) => f.type === "dir" && f.name !== ".github")
-
+export default async function DownloadsPage() {
+  const releases = await getGitHubRepoContents("OnlyAbhii", "instella_app", "releases")
   return (
     <div className="flex flex-col min-h-screen">
-      <BackupsClient backups={backups} />
+      <DownloadsClient releases={releases} />
     </div>
   )
 }
