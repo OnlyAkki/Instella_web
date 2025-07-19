@@ -83,13 +83,26 @@ export default function BackupViewClient({
     try {
       console.log("BackupViewClient: Initiating download for:", mcOverridesDownloadUrl)
       
+      // Fetch the file and create a blob for download
+      const response = await fetch(mcOverridesDownloadUrl)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      
       // Create a temporary link to download the file
       const link = document.createElement('a')
-      link.href = mcOverridesDownloadUrl
+      link.href = url
       link.download = `${backupId}_mc_overrides.json`
+      link.style.display = 'none'
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+      
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(url)
       
       console.log("BackupViewClient: Download initiated successfully.")
     } catch (err: any) {
