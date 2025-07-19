@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { Github, Send, Heart } from "lucide-react"
 import { useTranslation } from "@/contexts/translation-context"
