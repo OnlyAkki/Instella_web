@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Calendar, User, Tag, FileText, File } from "lucide-react"
 import { format, parseISO, isValid } from "date-fns"
-import { downloadFile } from "../download-action"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useTranslation } from "@/contexts/translation-context"
 
 interface ManifestData {
@@ -46,17 +45,24 @@ export default function BackupViewClient({
   const router = useRouter()
   const manifest = manifestData?.manifest
   const [isDownloading, setIsDownloading] = useState(false)
+  const [lastUpdatedDate, setLastUpdatedDate] = useState<Date | null>(null)
 
-  const lastUpdatedDate = manifest?.last_updated
-    ? (() => {
+  // Handle date parsing on client side to avoid hydration issues
+  useEffect(() => {
+    if (manifest?.last_updated) {
+      try {
         console.log("Parsing date: Raw string =", manifest.last_updated)
         const parsed = parseISO(manifest.last_updated)
         console.log("Parsing date: parseISO result =", parsed)
         const valid = isValid(parsed)
         console.log("Parsing date: isValid result =", valid)
-        return valid ? parsed : null
-      })()
-    : null
+        setLastUpdatedDate(valid ? parsed : null)
+      } catch (err) {
+        console.error("Date parsing error:", err)
+        setLastUpdatedDate(null)
+      }
+    }
+  }, [manifest?.last_updated])
 
   console.log("BackupViewClient: Rendering with mcOverridesDownloadUrl:", mcOverridesDownloadUrl)
 
@@ -75,18 +81,19 @@ export default function BackupViewClient({
     setIsDownloading(true)
 
     try {
-      console.log("BackupViewClient: Initiating download via Server Action for:", mcOverridesDownloadUrl)
-      const response = await downloadFile(mcOverridesDownloadUrl, `${backupId}_mc_overrides.json`)
-
-      if (!response.ok) {
-        const errorMessage = await response.text()
-        console.error("BackupViewClient: Download failed:", errorMessage)
-        alert(`Failed to download file: ${errorMessage}`)
-      } else {
-        console.log("BackupViewClient: Download initiated successfully by server action.")
-      }
+      console.log("BackupViewClient: Initiating download for:", mcOverridesDownloadUrl)
+      
+      // Create a temporary link to download the file
+      const link = document.createElement('a')
+      link.href = mcOverridesDownloadUrl
+      link.download = `${backupId}_mc_overrides.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      console.log("BackupViewClient: Download initiated successfully.")
     } catch (err: any) {
-      console.error("BackupViewClient: Error calling downloadFile Server Action:", err)
+      console.error("BackupViewClient: Error downloading file:", err)
       alert(`An unexpected error occurred: ${err.message || "Please try again."}`)
     } finally {
       setIsDownloading(false)
@@ -97,8 +104,14 @@ export default function BackupViewClient({
     console.log("BackupViewClient: Displaying error state. Error:", error, "Manifest exists:", !!manifest)
     return (
       <div className="flex-1 flex items-center justify-center py-24">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-          <h1 className="text-2xl font-bold mb-4">{error || `${t("backupNotFound")} "${backupId}"`}</h1>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="text-center"
+        >
+          <h1 className="text-2xl font-bold mb-4">
+            {error || `${t("backupNotFound")} "${backupId}"`}
+          </h1>
           <p className="text-muted-foreground mb-6">{t("backupMightNotExist")}</p>
           <Button onClick={handleBackToBackups}>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -123,7 +136,9 @@ export default function BackupViewClient({
             {t("backToBackups")}
           </Button>
 
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-4">{manifest.name}</h1>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-4">
+            {manifest.name}
+          </h1>
           <p className="text-lg text-muted-foreground">
             {t("version")} {manifest.version_name} • {t("backup")} v{manifest.backup_version}
           </p>
@@ -175,7 +190,9 @@ export default function BackupViewClient({
                 <div>
                   <h3 className="font-semibold mb-2">{t("changelog")}</h3>
                   <div className="bg-muted/50 p-4 rounded-lg">
-                    <pre className="whitespace-pre-wrap text-sm text-muted-foreground">{manifest.changelog}</pre>
+                    <pre className="whitespace-pre-wrap text-sm text-muted-foreground">
+                      {manifest.changelog}
+                    </pre>
                   </div>
                 </div>
               )}
