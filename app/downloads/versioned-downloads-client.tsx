@@ -1,14 +1,11 @@
 "use client"
 
-import { motion } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Download, AlertTriangle, Calendar, Tag, ArrowLeft } from "lucide-react"
-import { format } from "date-fns"
 import { useState } from "react"
-import LoadingSpinner from "@/components/loading-spinner"
-import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { ArrowLeft, Download, Calendar, AlertTriangle, Tag, HardDrive } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface GitHubReleaseAsset {
   browser_download_url: string
@@ -32,203 +29,213 @@ interface VersionedDownloadsClientProps {
 }
 
 export default function VersionedDownloadsClient({ version, arch, releases }: VersionedDownloadsClientProps) {
+  const router = useRouter()
   const [downloadingAsset, setDownloadingAsset] = useState<string | null>(null)
 
-  // Find the specific version
+  // Find the specific release for this version
   const targetRelease = releases.find(
     (release) =>
       release.tag_name === version ||
-      release.tag_name === `{version}` ||
-      release.tag_name === `{version}` ||
-      release.name?.includes(version),
+      release.tag_name === `v${version}` ||
+      release.tag_name === `V${version}` ||
+      release.tag_name.replace(/^v/i, "") === version.replace(/^v/i, ""),
   )
 
-  // List of versions that should NOT show legacy warning
-  const currentVersions = ["V65", "v65", "65"]
-  const latestRelease = releases[0]
+  // Check if this is a legacy version (older than V60)
+  const versionNumber = Number.parseInt(version.replace(/^v/i, ""))
+  const isLegacyVersion = !isNaN(versionNumber) && versionNumber < 60
 
-  // Check if this is actually a legacy version
-  const isLegacyVersion =
-    targetRelease &&
-    latestRelease &&
-    targetRelease.tag_name !== latestRelease.tag_name &&
-    !currentVersions.some((v) => version.toLowerCase() === v.toLowerCase())
+  // Filter assets based on architecture if specified
+  const filteredAssets =
+    targetRelease?.assets.filter((asset) => {
+      if (!arch) return true
 
-  const handleDownload = (assetName: string, downloadUrl: string) => {
-    setDownloadingAsset(assetName)
-    window.open(downloadUrl, "_blank", "noopener,noreferrer")
-    setTimeout(() => setDownloadingAsset(null), 2000)
-  }
+      const assetName = asset.name.toLowerCase()
+      if (arch === "32") {
+        return assetName.includes("32bit") || assetName.includes("x86")
+      } else if (arch === "64") {
+        return (
+          assetName.includes("64bit") ||
+          assetName.includes("x64") ||
+          (!assetName.includes("32bit") && !assetName.includes("x86"))
+        )
+      }
+      return true
+    }) || []
 
-  const getFilteredAssets = () => {
-    if (!targetRelease) return []
-
-    let filteredAssets = targetRelease.assets.filter((asset) => asset.name.endsWith(".apk"))
-
-    if (arch) {
-      filteredAssets = filteredAssets.filter((asset) => {
-        const assetName = asset.name.toLowerCase()
-        if (arch === "32") {
-          return assetName.includes("32") || assetName.includes("x86")
-        } else if (arch === "64") {
-          return assetName.includes("64") || assetName.includes("arm64") || assetName.includes("armv8")
-        }
-        return true
-      })
+  const handleDownload = async (asset: GitHubReleaseAsset) => {
+    setDownloadingAsset(asset.name)
+    try {
+      // Create a temporary link to trigger download
+      const link = document.createElement("a")
+      link.href = asset.browser_download_url
+      link.download = asset.name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error("Download failed:", error)
+    } finally {
+      setTimeout(() => setDownloadingAsset(null), 2000)
     }
-
-    return filteredAssets
   }
 
-  if (!targetRelease) {
-    return (
-      <div className="flex-1 flex items-center justify-center py-24">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Version {version} Not Found</h1>
-          <p className="text-muted-foreground mb-6">The requested version could not be found.</p>
-          <Button asChild>
-            <Link href="/downloads">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Downloads
-            </Link>
-          </Button>
-        </motion.div>
-      </div>
-    )
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes"
+    const k = 1024
+    const sizes = ["Bytes", "KB", "MB", "GB"]
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i]
   }
 
-  const filteredAssets = getFilteredAssets()
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  }
 
   return (
-    <div className="flex-1 py-16 md:py-24">
-      <div className="container mx-auto px-4 max-w-4xl">
-        {/* Warning Banner - Only show for legacy versions */}
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Legacy Warning */}
         {isLegacyVersion && (
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-            <Card className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <AlertTriangle className="h-5 w-5 text-orange-600" />
-                  <div>
-                    <h3 className="font-semibold text-orange-800 dark:text-orange-200">Legacy Version</h3>
-                    <p className="text-sm text-orange-700 dark:text-orange-300">
-                      You are viewing version {version}. This is an older release that may not have the latest features
-                      or security updates.
-                    </p>
-                  </div>
+          <Card className="mb-6 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-orange-800 dark:text-orange-200">Legacy Version Warning</h3>
+                  <p className="text-sm text-orange-700 dark:text-orange-300">
+                    You are accessing an older version of Instella. This version may contain security vulnerabilities or
+                    missing features. We recommend using the latest version for the best experience and security
+                    updates.
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Back Button */}
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="mb-6">
-          <Button variant="outline" asChild>
-            <Link href="/downloads">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Latest Version
-            </Link>
-          </Button>
-        </motion.div>
+        <Button variant="outline" onClick={() => router.push("/downloads")} className="mb-6 gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Latest Version
+        </Button>
 
         {/* Version Info */}
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          <Card className="mb-8">
+        {targetRelease ? (
+          <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="text-2xl flex items-center gap-2">
-                <Tag className="h-5 w-5" />
-                {targetRelease.name || `Instella App ${targetRelease.tag_name}`}
-                <Badge variant={isLegacyVersion ? "secondary" : "default"}>
-                  {isLegacyVersion ? `${version}` : "Current"}
-                </Badge>
-                {arch && <Badge variant="outline">{arch}-bit</Badge>}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span>Released {format(new Date(targetRelease.published_at), "PPP")}</span>
-              </div>
-
-              {targetRelease.body && (
-                <div>
-                  <h3 className="font-semibold mb-2">Release Notes</h3>
-                  <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <pre className="whitespace-pre-wrap text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg border border-border">
-                      {targetRelease.body}
-                    </pre>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Tag className="h-6 w-6 text-muted-foreground" />
+                  <CardTitle className="text-2xl font-bold">{targetRelease.tag_name}</CardTitle>
+                  <div className="flex gap-2">
+                    <Badge variant="secondary">V{versionNumber}</Badge>
+                    {arch && (
+                      <Badge variant="outline" className="gap-1">
+                        <HardDrive className="h-3 w-3" />
+                        {arch === "32" ? "32-bit" : "64-bit"}
+                      </Badge>
+                    )}
                   </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Downloads */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>Available Downloads</CardTitle>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                <span>Released {formatDate(targetRelease.published_at)}</span>
+              </div>
             </CardHeader>
-            <CardContent>
-              {filteredAssets.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
-                  No downloads available for the specified criteria.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {filteredAssets.map((asset, index) => {
-                    const isDownloading = downloadingAsset === asset.name
-                    const isClone = asset.name.toLowerCase().includes("clone")
 
-                    return (
-                      <motion.div
-                        key={asset.name}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="flex items-center justify-between p-4 border rounded-lg"
-                      >
-                        <div>
-                          <h4 className="font-medium">{asset.name}</h4>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span>{(asset.size / 1024 / 1024).toFixed(1)} MB</span>
-                            {isClone && (
-                              <Badge variant="outline" className="text-xs">
-                                Clone
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <Button
-                          onClick={() => handleDownload(asset.name, asset.browser_download_url)}
-                          disabled={isDownloading}
-                        >
-                          {isDownloading ? (
-                            <>
-                              <LoadingSpinner size="sm" className="mr-2" />
-                              Downloading...
-                            </>
-                          ) : (
-                            <>
-                              <Download className="mr-2 h-4 w-4" />
-                              Download
-                            </>
-                          )}
-                        </Button>
-                      </motion.div>
-                    )
-                  })}
+            {targetRelease.body && (
+              <CardContent>
+                <h3 className="font-semibold mb-3">Release Notes</h3>
+                <div className="bg-muted p-4 rounded-lg">
+                  <pre className="whitespace-pre-wrap text-sm font-mono">{targetRelease.body}</pre>
                 </div>
-              )}
+              </CardContent>
+            )}
+          </Card>
+        ) : (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Version Not Found</h3>
+                <p className="text-muted-foreground">Version {version} could not be found in the releases.</p>
+              </div>
             </CardContent>
           </Card>
-        </motion.div>
+        )}
+
+        {/* Downloads Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Available Downloads
+            </CardTitle>
+            <CardDescription>
+              {arch
+                ? `Showing ${arch === "32" ? "32-bit" : "64-bit"} downloads for version ${version}`
+                : `All downloads for version ${version}`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {filteredAssets.length > 0 ? (
+              <div className="space-y-4">
+                {filteredAssets.map((asset) => (
+                  <div
+                    key={asset.name}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium break-all">{asset.name}</h4>
+                      <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-muted-foreground">
+                        <span>{formatFileSize(asset.size)}</span>
+                        {asset.name.includes("Clone") && (
+                          <Badge variant="secondary" className="text-xs">
+                            Clone
+                          </Badge>
+                        )}
+                        {asset.name.includes("Standard") && (
+                          <Badge variant="outline" className="text-xs">
+                            Standard
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => handleDownload(asset)}
+                      disabled={downloadingAsset === asset.name}
+                      className="min-w-[120px] flex-shrink-0 w-full sm:w-auto"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      {downloadingAsset === asset.name ? "Downloading..." : "Download"}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Download className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Downloads Available</h3>
+                <p className="text-muted-foreground">
+                  {arch
+                    ? `No ${arch === "32" ? "32-bit" : "64-bit"} downloads found for this version.`
+                    : "No downloads found for this version."}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Footer */}
+        <div className="text-center mt-8 text-muted-foreground">
+          <p>Made with ❤️ by Instella Team.</p>
+        </div>
       </div>
     </div>
   )
