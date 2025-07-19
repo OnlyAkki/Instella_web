@@ -38,8 +38,8 @@ export default function VersionedDownloadsClient({ version, arch, releases }: Ve
   const targetRelease = releases.find(
     (release) =>
       release.tag_name === version ||
-      release.tag_name === `v${version}` ||
-      release.tag_name === `V${version}` ||
+      release.tag_name === `{version}` ||
+      release.tag_name === `{version}` ||
       release.name?.includes(version),
   )
 
@@ -140,7 +140,7 @@ export default function VersionedDownloadsClient({ version, arch, releases }: Ve
                 <Tag className="h-5 w-5" />
                 {targetRelease.name || `Instella App ${targetRelease.tag_name}`}
                 <Badge variant={isLegacyVersion ? "secondary" : "default"}>
-                  {isLegacyVersion ? `v${version}` : "Current"}
+                  {isLegacyVersion ? `${version}` : "Current"}
                 </Badge>
                 {arch && <Badge variant="outline">{arch}-bit</Badge>}
               </CardTitle>
