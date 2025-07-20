@@ -20,6 +20,8 @@ import {
   ExternalLink,
   ArrowLeft,
   ImageIcon,
+  Copy,
+  Check,
 } from "lucide-react"
 import { useTranslation } from "@/contexts/translation-context"
 import { searchFlags } from "@/lib/flags"
@@ -42,6 +44,7 @@ interface FlagData {
   date_added: string
   date_removed: string | null
   options: FlagOption
+  flag_name?: string // Flag name from manifest.json
 }
 
 interface FlagCategory {
@@ -61,6 +64,7 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedFlag, setSelectedFlag] = useState<FlagData | null>(null)
+  const [copied, setCopied] = useState(false)
 
   console.log("FlagsClient: Received categories:", categories)
   console.log("FlagsClient: Categories length:", categories.length)
@@ -116,6 +120,18 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
   const selectedCategoryData = useMemo(() => {
     return categories.find((cat) => cat.name === selectedCategory)
   }, [categories, selectedCategory])
+
+  const handleCopyFlagName = async () => {
+    if (selectedFlag?.flag_name) {
+      try {
+        await navigator.clipboard.writeText(selectedFlag.flag_name)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch (err) {
+        console.error("Failed to copy flag name:", err)
+      }
+    }
+  }
 
   const handleCategorySelect = (categoryName: string) => {
     setSelectedCategory(categoryName)
@@ -205,30 +221,28 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
               transition={{ duration: 0.6, delay: 0.2 }}
             >
               <Card> 
-  <CardHeader>
-    <CardTitle className="flex items-center gap-2">
-      <ImageIcon className="h-5 w-5" />
-      Screenshot
-    </CardTitle>
-  </CardHeader>
-  <CardContent>
-    <a
-      href="https://t.me/instellacommunity/3088"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <Button className="w-full" size="lg">
-        <ExternalLink className="h-4 w-4 mr-2" />
-        View on Telegram
-      </Button>
-    </a>
-    <p className="text-xs text-muted-foreground mt-2 break-all">
-      Source: {selectedFlag.source}
-    </p>
-  </CardContent>
-</Card>
-
-               
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5" />
+                    Screenshot
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <a
+                    href="https://t.me/instellacommunity/3088"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button className="w-full" size="lg">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View on Telegram
+                    </Button>
+                  </a>
+                  <p className="text-xs text-muted-foreground mt-2 break-all">
+                    Source: {selectedFlag.source}
+                  </p>
+                </CardContent>
+              </Card>
             </motion.div>
 
             {/* Flag Details */}
@@ -311,6 +325,34 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Flag Name Section */}
+                {selectedFlag.flag_name && (
+                  <>
+                    <div className="space-y-2">
+                      <span className="text-sm font-medium text-muted-foreground">Flag Name:</span>
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                        <code className="text-sm font-mono text-foreground select-all">
+                          {selectedFlag.flag_name}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 ml-2 flex-shrink-0"
+                          onClick={handleCopyFlagName}
+                        >
+                          {copied ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    <Separator />
+                  </>
+                )}
+
+                {/* Options */}
                 {Object.entries(selectedFlag.options).map(([key, value]) => (
                   <div key={key} className="flex items-center justify-between">
                     <span className="text-sm font-medium capitalize">{key.replace(/_/g, " ")}</span>
