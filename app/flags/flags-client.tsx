@@ -204,21 +204,31 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ImageIcon className="h-5 w-5" />
-                    Screenshot
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={handleViewOnTelegram} className="w-full" size="lg">
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    View on Telegram
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-2 break-all">Source: {selectedFlag.source}</p>
-                </CardContent>
-              </Card>
+              <Card> 
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <ImageIcon className="h-5 w-5" />
+      Screenshot
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+    <a
+      href="https://t.me/instellacommunity/3088"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Button className="w-full" size="lg">
+        <ExternalLink className="h-4 w-4 mr-2" />
+        View on Telegram
+      </Button>
+    </a>
+    <p className="text-xs text-muted-foreground mt-2 break-all">
+      Source: {selectedFlag.source}
+    </p>
+  </CardContent>
+</Card>
+
+               
             </motion.div>
 
             {/* Flag Details */}
