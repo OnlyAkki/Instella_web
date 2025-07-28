@@ -19,6 +19,7 @@ export interface Flag {
   date_added: string
   date_removed: string | null
   options: FlagOption
+  flag_name?: string // Flag name from manifest.json
 }
 
 export interface FlagManifest {
@@ -29,6 +30,24 @@ export interface FlagCategory {
   name: string
   path: string
   flags: Flag[]
+  icon?: string // Add icon for categories
+}
+
+// Category icons mapping based on the screenshot
+export const CATEGORY_ICONS: Record<string, string> = {
+  all: "Archive",
+  direct: "Send",
+  reels: "Play",
+  stories: "PlusCircle",
+  feed: "Archive",
+  interface: "Layout",
+  notes: "FileText",
+  quality: "Image",
+  profile: "User",
+  comments: "MessageCircle",
+  camera: "Camera",
+  "meta ai": "Briefcase",
+  default: "Flag",
 }
 
 /**
@@ -93,7 +112,12 @@ async function buildCategoriesFromTree(tree: GitTreeItem[]): Promise<FlagCategor
 
         let cat = categoryMap.get(category)
         if (!cat) {
-          cat = { name: category, path: category, flags: [] }
+          cat = {
+            name: category,
+            path: category,
+            flags: [],
+            icon: CATEGORY_ICONS[category.toLowerCase()] || CATEGORY_ICONS.default,
+          }
           categoryMap.set(category, cat)
         }
         cat.flags.push(...manifest.flags)
@@ -132,18 +156,33 @@ export async function getFlagImage(category: string, flagFolder: string): Promis
 }
 
 /**
- * Basic client-side search helper.
+ * Enhanced search helper that includes flag ID search.
  */
 export function searchFlags(flags: Flag[], query: string): Flag[] {
   if (!query.trim()) return flags
-  const q = query.toLowerCase()
-  return flags.filter(
-    (f) =>
-      f.title.toLowerCase().includes(q) ||
-      f.description.toLowerCase().includes(q) ||
-      f.tags.some((t) => t.toLowerCase().includes(q)) ||
-      f.author.toLowerCase().includes(q),
-  )
+  const q = query.toLowerCase().trim()
+
+  return flags.filter((f) => {
+    // Search in title
+    if (f.title.toLowerCase().includes(q)) return true
+
+    // Search in description
+    if (f.description.toLowerCase().includes(q)) return true
+
+    // Search in tags
+    if (f.tags.some((t) => t.toLowerCase().includes(q))) return true
+
+    // Search in author
+    if (f.author.toLowerCase().includes(q)) return true
+
+    // Search in flag ID (exact match or partial)
+    if (f.id.toLowerCase().includes(q)) return true
+
+    // Search in flag name from manifest
+    if (f.flag_name && f.flag_name.toLowerCase().includes(q)) return true
+
+    return false
+  })
 }
 
 /* ------------------------------------------------------------------------- */
@@ -155,17 +194,69 @@ function getMockCategories(): FlagCategory[] {
     {
       name: "direct",
       path: "direct",
+      icon: CATEGORY_ICONS.direct,
       flags: [
         {
           id: "72063",
-          title: "Republic of India",
+          title: "Direct Message Enhancement",
           description:
-            "The national flag of India, also known as the Tiranga. It consists of three horizontal stripes: saffron, white (with the Ashoka Chakra), and green.",
+            "Enhanced direct messaging features with improved UI and functionality for better user experience.",
           source: "https://instafel.app/library/flag/view?id=72063",
-          tags: ["flag", "India", "national flag", "Tiranga", "Asia"],
+          tags: ["direct", "messaging", "ui", "enhancement"],
           author: "instafel_user",
           date_added: "2025-07-19",
           date_removed: null,
+          flag_name: "ig_android_direct_inbox_redesign",
+          options: {
+            is_enabled: true,
+            delete_media: false,
+            edit_media: true,
+            favorite_media: false,
+            is_redesigned_preview_enabled: true,
+          },
+        },
+      ],
+    },
+    {
+      name: "stories",
+      path: "stories",
+      icon: CATEGORY_ICONS.stories,
+      flags: [
+        {
+          id: "51234",
+          title: "Stories Camera Enhancement",
+          description: "Improved camera functionality for Instagram Stories with new filters and effects.",
+          source: "https://instafel.app/library/flag/view?id=51234",
+          tags: ["stories", "camera", "filters", "effects"],
+          author: "stories_dev",
+          date_added: "2025-07-20",
+          date_removed: null,
+          flag_name: "ig_android_stories_camera_v2",
+          options: {
+            is_enabled: true,
+            delete_media: false,
+            edit_media: true,
+            favorite_media: true,
+            is_redesigned_preview_enabled: true,
+          },
+        },
+      ],
+    },
+    {
+      name: "reels",
+      path: "reels",
+      icon: CATEGORY_ICONS.reels,
+      flags: [
+        {
+          id: "98765",
+          title: "Reels Player Optimization",
+          description: "Optimized video player for Instagram Reels with better performance and quality.",
+          source: "https://instafel.app/library/flag/view?id=98765",
+          tags: ["reels", "video", "player", "optimization"],
+          author: "reels_team",
+          date_added: "2025-07-21",
+          date_removed: null,
+          flag_name: "ig_android_reels_player_v3",
           options: {
             is_enabled: true,
             delete_media: false,
