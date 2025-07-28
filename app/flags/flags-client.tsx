@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { motion } from "framer-motion"
 import { useState, useEffect, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -15,13 +17,27 @@ import {
   ChevronRight,
   Calendar,
   User,
-  Tag,
   Settings,
   ExternalLink,
   ArrowLeft,
   ImageIcon,
   Copy,
   Check,
+  Tv,
+  Send,
+  Play,
+  PlusCircle,
+  Archive,
+  Layout,
+  FileText,
+  MessageCircle,
+  Camera,
+  Bot,
+  WrenchIcon as Screwdriver,
+  Type,
+  Dot,
+  Palette,
+  MoreHorizontal,
 } from "lucide-react"
 import { useTranslation } from "@/contexts/translation-context"
 import { searchFlags } from "@/lib/flags"
@@ -51,10 +67,33 @@ interface FlagCategory {
   name: string
   path: string
   flags: FlagData[]
+  icon?: string
 }
 
 interface FlagsClientProps {
   categories: FlagCategory[]
+}
+
+// Icon mapping for dynamic rendering with all requested icons
+const IconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Tv,
+  Send,
+  Play,
+  PlusCircle,
+  Archive,
+  Layout,
+  FileText,
+  ImageIcon,
+  User,
+  MessageCircle,
+  Camera,
+  Bot,
+  Screwdriver,
+  Type,
+  Dot,
+  Palette,
+  MoreHorizontal,
+  Flag,
 }
 
 export default function FlagsClient({ categories }: FlagsClientProps) {
@@ -121,6 +160,11 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
     return categories.find((cat) => cat.name === selectedCategory)
   }, [categories, selectedCategory])
 
+  // Calculate total flags for "All" category
+  const totalFlags = useMemo(() => {
+    return categories.reduce((total, category) => total + category.flags.length, 0)
+  }, [categories])
+
   const handleCopyFlagName = async () => {
     if (selectedFlag?.flag_name) {
       try {
@@ -134,6 +178,15 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
   }
 
   const handleCategorySelect = (categoryName: string) => {
+    if (categoryName === "all") {
+      // Show all flags in search results
+      setSearchQuery("")
+      setSelectedCategory(null)
+      setSelectedFlag(null)
+      router.push("/flags")
+      return
+    }
+
     setSelectedCategory(categoryName)
     setSelectedFlag(null)
     router.push(`/flags?category=${categoryName}`)
@@ -147,6 +200,7 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
   const handleBackToCategories = () => {
     setSelectedCategory(null)
     setSelectedFlag(null)
+    setSearchQuery("")
     window.history.pushState({}, "", "/flags")
     router.refresh()
   }
@@ -160,6 +214,32 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
   const handleViewOnTelegram = () => {
     if (selectedFlag?.source) {
       window.open(selectedFlag.source, "_blank", "noopener,noreferrer")
+    }
+  }
+
+  const handleSearch = () => {
+    // Trigger search when search button is clicked
+    if (searchQuery.trim()) {
+      setSelectedCategory(null)
+      setSelectedFlag(null)
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch()
+    }
+  }
+
+  // Handle search input change - fix for clearing search results
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchQuery(value)
+
+    // If search is cleared, reset to categories view
+    if (!value.trim()) {
+      setSelectedCategory(null)
+      setSelectedFlag(null)
     }
   }
 
@@ -182,6 +262,12 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
     },
   }
 
+  // Helper function to get category icon
+  const getCategoryIcon = (iconName?: string) => {
+    const IconComponent = IconMap[iconName || "Flag"] || Flag
+    return IconComponent
+  }
+
   // Flag detail view
   if (selectedFlag) {
     return (
@@ -195,7 +281,7 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
           >
             <Button variant="outline" className="mb-6 bg-transparent" onClick={handleBackToFlags}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to {selectedCategory} Flags
+              {t("backToFlags").replace("{category}", selectedCategory || "")}
             </Button>
 
             <div className="flex items-center gap-3 mb-4">
@@ -220,26 +306,22 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <Card> 
+              <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <ImageIcon className="h-5 w-5" />
-                    Screenshot
+                    {t("screenshot")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <a
-                    href="https://t.me/instellacommunity/3088"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  <a href="https://t.me/instellacommunity/3088" target="_blank" rel="noopener noreferrer">
                     <Button className="w-full" size="lg">
                       <ExternalLink className="h-4 w-4 mr-2" />
-                      View on Telegram
+                      {t("viewOnTelegram")}
                     </Button>
                   </a>
                   <p className="text-xs text-muted-foreground mt-2 break-all">
-                    Source: {selectedFlag.source}
+                    {t("source")}: {selectedFlag.source}
                   </p>
                 </CardContent>
               </Card>
@@ -255,7 +337,7 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
               {/* Description */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Description</CardTitle>
+                  <CardTitle>{t("description")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground leading-relaxed">{selectedFlag.description}</p>
@@ -267,36 +349,36 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <User className="h-5 w-5" />
-                    Information
+                    {t("information")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Author:</span>
+                    <span className="text-muted-foreground">{t("author")}:</span>
                     <span className="font-medium">{selectedFlag.author}</span>
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Date Added:</span>
+                    <span className="text-muted-foreground">{t("dateAdded")}:</span>
                     <span className="font-medium">{selectedFlag.date_added}</span>
                   </div>
                   {selectedFlag.date_removed && (
                     <>
                       <Separator />
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Date Removed:</span>
+                        <span className="text-muted-foreground">{t("dateRemoved")}:</span>
                         <span className="font-medium text-destructive">{selectedFlag.date_removed}</span>
                       </div>
                     </>
                   )}
                   <Separator />
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Category:</span>
+                    <span className="text-muted-foreground">{t("category")}:</span>
                     <Badge variant="secondary">{selectedCategory}</Badge>
                   </div>
                   <Separator />
                   <div className="space-y-2">
-                    <span className="text-muted-foreground">Tags:</span>
+                    <span className="text-muted-foreground">{t("tags")}:</span>
                     <div className="flex flex-wrap gap-2">
                       {selectedFlag.tags.map((tag, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
@@ -321,7 +403,7 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5" />
-                  Meta Config Settings
+                  {t("metaConfigSettings")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -329,22 +411,16 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
                 {selectedFlag.flag_name && (
                   <>
                     <div className="space-y-2">
-                      <span className="text-sm font-medium text-muted-foreground">Flag Name:</span>
+                      <span className="text-sm font-medium text-muted-foreground">{t("flagName")}:</span>
                       <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
-                        <code className="text-sm font-mono text-foreground select-all">
-                          {selectedFlag.flag_name}
-                        </code>
+                        <code className="text-sm font-mono text-foreground select-all">{selectedFlag.flag_name}</code>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 ml-2 flex-shrink-0"
                           onClick={handleCopyFlagName}
                         >
-                          {copied ? (
-                            <Check className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
+                          {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                         </Button>
                       </div>
                     </div>
@@ -369,6 +445,8 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
 
   // Category flags view
   if (selectedCategory && selectedCategoryData) {
+    const CategoryIcon = getCategoryIcon(selectedCategoryData.icon)
+
     return (
       <div className="flex-1 py-16 md:py-24">
         <div className="container mx-auto px-4">
@@ -380,15 +458,24 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
           >
             <Button variant="outline" className="mb-6 bg-transparent" onClick={handleBackToCategories}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Categories
+              {t("backToCategories")}
             </Button>
 
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-4">
-                {selectedCategory} Flags
-              </h1>
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <motion.div
+                  className="rounded-full bg-primary/10 p-3 text-primary"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                >
+                  <CategoryIcon className="h-8 w-8" />
+                </motion.div>
+                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl capitalize">
+                  {selectedCategory} {t("flags")}
+                </h1>
+              </div>
               <p className="text-lg text-muted-foreground">
-                {selectedCategoryData.flags.length} flags available in this category
+                {selectedCategoryData.flags.length} {t("flagsAvailable")}
               </p>
             </div>
           </motion.div>
@@ -479,34 +566,40 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
             <Flag className="h-12 w-12 text-primary" />
           </motion.div>
 
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl mb-4">Flags Library</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            With this library you can get information about the flags of Instagram and understand them better.
-          </p>
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl mb-4">{t("flagsLibrary")}</h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">{t("flagsLibraryDesc")}</p>
 
-          {/* Search Container */}
+          {/* Search Container - Matching the screenshot design */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="max-w-md mx-auto mb-12"
+            className="max-w-2xl mx-auto mb-12"
           >
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search flags..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-background/50 backdrop-blur border-border/50"
-              />
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  placeholder={t("searchFlags")}
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onKeyPress={handleKeyPress}
+                  className="pl-12 pr-4 py-3 text-base bg-background/50 backdrop-blur border-border/50 rounded-lg"
+                />
+              </div>
+              <Button onClick={handleSearch} size="lg" className="px-4 py-3 rounded-lg">
+                <Search className="h-5 w-5" />
+              </Button>
             </div>
           </motion.div>
         </motion.div>
 
         {/* Categories or Search Results */}
-        {searchQuery ? (
+        {searchQuery.trim() ? (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
-            <h2 className="text-2xl font-bold mb-6">Search Results ({filteredFlags.length})</h2>
+            <h2 className="text-2xl font-bold mb-6">
+              {t("searchResults")} ({filteredFlags.length})
+            </h2>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {filteredFlags.map((flag, index) => (
                 <motion.div
@@ -567,47 +660,66 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
           </motion.div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
-            <h2 className="text-2xl font-bold mb-6">Categories</h2>
-            <div className="grid gap-4 max-w-md mx-auto">
-              {categories.map((category, index) => (
-                <motion.div
-                  key={category.name}
-                  variants={itemVariants}
-                  whileHover={{
-                    x: 8,
-                    transition: { duration: 0.3, ease: "easeOut" },
-                  }}
-                  className="group cursor-pointer"
-                  onClick={() => handleCategorySelect(category.name)}
-                >
-                  <Card className="relative overflow-hidden border-2 border-border bg-card backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <motion.div
-                            className="rounded-full bg-primary/10 p-3 text-primary transition-colors group-hover:bg-primary/20"
-                            whileHover={{ scale: 1.1, rotate: 5 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                          >
-                            <Tag className="h-5 w-5" />
-                          </motion.div>
-                          <div>
-                            <h3 className="text-lg font-semibold capitalize">{category.name}</h3>
-                            <p className="text-sm text-muted-foreground">{category.flags.length} flags</p>
-                          </div>
-                        </div>
+            <h2 className="text-2xl font-bold mb-6">{t("categories")}</h2>
+
+            {/* Categories Grid - Matching the screenshot layout */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
+              {/* All Category with TV icon */}
+              <motion.div
+                variants={itemVariants}
+                whileHover={{
+                  y: -4,
+                  transition: { duration: 0.3, ease: "easeOut" },
+                }}
+                className="group cursor-pointer"
+                onClick={() => handleCategorySelect("all")}
+              >
+                <Card className="relative overflow-hidden border border-border bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
+                  <CardContent className="p-6 text-center">
+                    <motion.div
+                      className="mx-auto w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 text-primary transition-colors group-hover:bg-primary/20"
+                      whileHover={{ scale: 1.1 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
+                      <Tv className="h-6 w-6" />
+                    </motion.div>
+                    <h3 className="text-lg font-semibold mb-2">All</h3>
+                    <p className="text-sm text-muted-foreground">{totalFlags} Flag</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Dynamic Categories */}
+              {categories.map((category, index) => {
+                const CategoryIcon = getCategoryIcon(category.icon)
+
+                return (
+                  <motion.div
+                    key={category.name}
+                    variants={itemVariants}
+                    whileHover={{
+                      y: -4,
+                      transition: { duration: 0.3, ease: "easeOut" },
+                    }}
+                    className="group cursor-pointer"
+                    onClick={() => handleCategorySelect(category.name)}
+                  >
+                    <Card className="relative overflow-hidden border border-border bg-card/50 backdrop-blur transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10">
+                      <CardContent className="p-6 text-center">
                         <motion.div
-                          className="rounded-full bg-primary/10 p-2 text-primary transition-colors group-hover:bg-primary/20"
-                          whileHover={{ x: 4 }}
+                          className="mx-auto w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 text-primary transition-colors group-hover:bg-primary/20"
+                          whileHover={{ scale: 1.1 }}
                           transition={{ type: "spring", stiffness: 400, damping: 10 }}
                         >
-                          <ChevronRight className="h-4 w-4" />
+                          <CategoryIcon className="h-6 w-6" />
                         </motion.div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+                        <h3 className="text-lg font-semibold mb-2 capitalize">{category.name}</h3>
+                        <p className="text-sm text-muted-foreground">{category.flags.length} Flag</p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )
+              })}
             </div>
           </motion.div>
         )}
@@ -615,8 +727,8 @@ export default function FlagsClient({ categories }: FlagsClientProps) {
         {categories.length === 0 && !searchQuery && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16">
             <Flag className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold mb-2">No Categories Found</h2>
-            <p className="text-muted-foreground">Check back later for flag categories.</p>
+            <h2 className="text-xl font-semibold mb-2">{t("noCategoriesFound")}</h2>
+            <p className="text-muted-foreground">{t("checkBackLaterFlags")}</p>
           </motion.div>
         )}
       </div>
